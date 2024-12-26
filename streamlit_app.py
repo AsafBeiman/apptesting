@@ -1,51 +1,30 @@
 import streamlit as st
-from pathlib import Path
+import pyvista as pv
+from stpyvista import stpyvista
 
-st.set_page_config(page_title="STL Uploader")
+## Initialize a plotter object
+plotter = pv.Plotter(window_size=[400, 400])
 
-st.title("STL File Uploader")
+## Create a mesh
+mesh = pv.Sphere(radius=1.0, center=(0, 0, 0))
 
-# Create uploads directory if it doesn't exist
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+## Associate a scalar field to the mesh
+x, y, z = mesh.cell_centers().points.T
+mesh["My scalar"] = z
 
-# File uploader
-uploaded_file = st.file_uploader("Choose an STL file", type=['stl'])
+## Add mesh to the plotter
+plotter.add_mesh(
+    mesh,
+    scalars="My scalar",
+    cmap="prism",
+    show_edges=True,
+    edge_color="#001100",
+    ambient=0.2,
+)
 
-if uploaded_file is not None:
-    # Display file info
-    file_details = {
-        "Filename": uploaded_file.name,
-        "File size": f"{uploaded_file.size / 1024:.2f} KB"
-    }
+## Some final touches
+plotter.background_color = "white"
+plotter.view_isometric()
 
-    st.write("File Details:")
-    for key, value in file_details.items():
-        st.write(f"{key}: {value}")
-
-    # Save the file
-    if st.button("Save File"):
-        file_path = UPLOAD_DIR / uploaded_file.name
-        try:
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.success(f"File saved successfully at {file_path}")
-
-            # Display the list of uploaded files
-            st.write("\nFiles in upload directory:")
-            files = list(UPLOAD_DIR.glob("*.stl"))
-            for file in files:
-                st.write(f"- {file.name} ({file.stat().st_size / 1024:.2f} KB)")
-
-        except Exception as e:
-            st.error(f"Error saving file: {str(e)}")
-else:
-    st.info("Please upload an STL file")
-
-# Add basic information in the sidebar
-with st.sidebar:
-    st.header("About")
-    st.write("""
-    This simple app allows you to upload STL (STereoLithography) files.
-    Files are saved in the 'uploads' directory.
-    """)
+## Pass a plotter to stpyvista
+stpyvista(plotter)
