@@ -18,3 +18,8 @@ trame-components
 trame-server
 trame-vtk
 trame-vuetify
+libgl1-mesa-dev 
+xvfb 
+python3-tk 
+python-tk 
+libx11-dev
