@@ -2,29 +2,15 @@ import streamlit as st
 import pyvista as pv
 from stpyvista import stpyvista
 
-## Initialize a plotter object
-plotter = pv.Plotter(window_size=[400, 400])
+res = st.slider("Resolution", 5, 100, 20, 5)
 
-## Create a mesh
-mesh = pv.Sphere(radius=1.0, center=(0, 0, 0))
+# Set up plotter
+plotter = pv.Plotter(window_size=[300, 300])
 
-## Associate a scalar field to the mesh
-x, y, z = mesh.cell_centers().points.T
-mesh["My scalar"] = z
-
-## Add mesh to the plotter
-plotter.add_mesh(
-    mesh,
-    scalars="My scalar",
-    cmap="prism",
-    show_edges=True,
-    edge_color="#001100",
-    ambient=0.2,
-)
-
-## Some final touches
-plotter.background_color = "white"
+# Create element
+sphere = pv.Sphere(phi_resolution=res, theta_resolution=res)
+plotter.add_mesh(sphere, name="sphere", show_edges=True)
 plotter.view_isometric()
 
-## Pass a plotter to stpyvista
-stpyvista(plotter)
+# Pass the plotter (not the mesh) to stpyvista
+stpyvista(plotter, key=f"sphere_{res}")
