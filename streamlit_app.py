@@ -1,7 +1,7 @@
 import streamlit as st
 import pyvista as pv
 from stpyvista import stpyvista
-
+pv.start_xvfb()  # Start virtual framebuffer
 res = st.slider("Resolution", 5, 100, 20, 5)
 
 # Set up plotter
