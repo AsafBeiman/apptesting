@@ -8,6 +8,23 @@ from datetime import datetime
 pv.start_xvfb()
 st.set_page_config(layout="wide")
 
+# Preset views
+PRESET_VIEWS = {
+    'Front': {'azimuth': 0, 'elevation': 0},
+    'Right': {'azimuth': 90, 'elevation': 0},
+    'Left': {'azimuth': -90, 'elevation': 0},
+    'Back': {'azimuth': 180, 'elevation': 0},
+    'Top': {'azimuth': 0, 'elevation': 90},
+    'Top Right Front': {'azimuth': 45, 'elevation': 45},
+    'Top Right Back': {'azimuth': 135, 'elevation': 45},
+    'Top Left Front': {'azimuth': -45, 'elevation': 45},
+    'Top Left Back': {'azimuth': -135, 'elevation': 45},
+    'Bottom Right Front': {'azimuth': 45, 'elevation': -45},
+    'Bottom Right Back': {'azimuth': 135, 'elevation': -45},
+    'Bottom Left Front': {'azimuth': -45, 'elevation': -45},
+    'Bottom Left Back': {'azimuth': -135, 'elevation': -45},
+}
+
 # Initialize session state
 if 'plotter' not in st.session_state:
     st.session_state.plotter = None
@@ -15,6 +32,10 @@ if 'mesh_path' not in st.session_state:
     st.session_state.mesh_path = None
 if 'captured_views' not in st.session_state:
     st.session_state.captured_views = []
+if 'azimuth' not in st.session_state:
+    st.session_state.azimuth = 45  # Default Top Right Front
+if 'elevation' not in st.session_state:
+    st.session_state.elevation = 45  # Default Top Right Front
 
 def save_uploaded_file(uploaded_file):
     """Save uploaded file temporarily and return the path"""
@@ -45,19 +66,21 @@ def setup_plotter(mesh, background_color="#e6e9ed", body_color="#b5bec9"):
     )
     plotter.add_mesh(edges, color='black', line_width=2)
     
-    # Initial camera setup
-    plotter.camera.position = (0, 0, 1)
-    plotter.camera.up = (0, 1, 0)
-    plotter.reset_camera()
-    
     return plotter
 
 def get_view_image(plotter, azimuth, elevation):
     """Update camera and get screenshot"""
+    plotter.reset_camera()
+    plotter.camera_position = 'xy'
     plotter.camera.azimuth = azimuth
     plotter.camera.elevation = elevation
-    plotter.show(auto_close=False)  # Render the scene
-    return plotter.screenshot()
+    plotter.show(auto_close=False)
+    return plotter.screenshot(
+        return_img=True,
+        window_size=[1200, 1200],  # High resolution
+        transparent_background=False,
+        return_rgba=True,
+    )
 
 st.title("STL View Generator")
 
@@ -68,58 +91,57 @@ if uploaded_file:
     try:
         # Only set up plotter and mesh once when file is uploaded
         if st.session_state.plotter is None:
-            # Save file
             st.session_state.mesh_path = save_uploaded_file(uploaded_file)
-            # Read STL and setup plotter
             mesh = pv.read(st.session_state.mesh_path)
             st.session_state.plotter = setup_plotter(mesh)
-        
-        # Layout
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            # View controls
-            azimuth = st.slider("Azimuth", -180, 180, 0)
-            elevation = st.slider("Elevation", -90, 90, 0)
+
+        # Create two columns for controls and image
+        control_col, image_col = st.columns([1, 2])
+
+        with control_col:
+            st.markdown("### View Controls")
             
-            # Generate and show preview using existing plotter
-            preview_image = get_view_image(st.session_state.plotter, azimuth, elevation)
-            st.image(preview_image, caption="Preview")
-        
-        with col2:
+            # Preset views
+            selected_preset = st.selectbox("Preset Views", list(PRESET_VIEWS.keys()), 
+                                         index=list(PRESET_VIEWS.keys()).index('Top Right Front'))
+            if selected_preset:
+                st.session_state.azimuth = PRESET_VIEWS[selected_preset]['azimuth']
+                st.session_state.elevation = PRESET_VIEWS[selected_preset]['elevation']
+
+            # View controls
+            st.session_state.azimuth = st.slider("Azimuth", -180, 180, st.session_state.azimuth)
+            st.session_state.elevation = st.slider("Elevation", -90, 90, st.session_state.elevation)
+
+            # Capture button
             if st.button("Capture Current View"):
+                preview_image = get_view_image(st.session_state.plotter, 
+                                            st.session_state.azimuth, 
+                                            st.session_state.elevation)
                 st.session_state.captured_views.append({
-                    'image': preview_image.copy(),  # Make a copy of the current image
+                    'image': preview_image.copy(),
                     'timestamp': datetime.now().strftime("%Y%m%d_%H%M%S"),
-                    'azimuth': azimuth,
-                    'elevation': elevation
+                    'azimuth': st.session_state.azimuth,
+                    'elevation': st.session_state.elevation
                 })
                 st.success("View captured!")
+
+        with image_col:
+            # Generate and show preview using existing plotter
+            preview_image = get_view_image(st.session_state.plotter, 
+                                         st.session_state.azimuth, 
+                                         st.session_state.elevation)
+            st.image(preview_image, caption="Preview", use_column_width=True)
 
         # Display captured views
         if st.session_state.captured_views:
             st.header("Captured Views")
             for idx, view in enumerate(st.session_state.captured_views):
-                cols = st.columns([2, 1, 1])
+                cols = st.columns([2, 1])
                 with cols[0]:
                     st.image(view['image'], width=200)
                 with cols[1]:
                     st.write(f"Azimuth: {view['azimuth']}°")
                     st.write(f"Elevation: {view['elevation']}°")
-                with cols[2]:
-                    if st.button(f"Delete View {idx}"):
-                        st.session_state.captured_views.pop(idx)
-                        st.rerun()
-
-        if st.sidebar.button("Clear All"):
-            if st.session_state.mesh_path and os.path.exists(st.session_state.mesh_path):
-                os.unlink(st.session_state.mesh_path)
-            if st.session_state.plotter is not None:
-                st.session_state.plotter.close()
-            st.session_state.plotter = None
-            st.session_state.mesh_path = None
-            st.session_state.captured_views = []
-            st.rerun()
 
     except Exception as e:
         st.error(f"Error: {str(e)}")
