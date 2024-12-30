@@ -32,63 +32,41 @@ def save_uploaded_file(uploaded_file):
         return tfile.name
     return None
 
-def setup_plotter(plotter, mesh, body_color, background_color):
-    """Setup plotter with consistent settings"""
-    plotter.background_color = background_color
-    edges = mesh.extract_feature_edges(
-        boundary_edges=False,
-        non_manifold_edges=False,
-        feature_angle=45,
-        manifold_edges=False,
-    )
-    plotter.add_mesh(mesh, color=body_color, smooth_shading=True, 
-                    split_sharp_edges=True, edge_color='black')
-    plotter.add_mesh(edges, color='black', line_width=2)
-    return plotter
-
-def capture_view(plotter, mesh, body_color, background_color):
+def capture_view(plotter):
     """Capture current view and return image data"""
-    # Create a new plotter for the screenshot with off_screen=True
-    temp_plotter = pv.Plotter(off_screen=True, window_size=plotter.window_size)
+    # Get the current render window
+    render_window = plotter.ren_win
     
-    # Set up the temp plotter exactly like the main plotter
-    setup_plotter(temp_plotter, mesh, body_color, background_color)
+    # Get the image directly from the render window
+    image = render_window.enable_offscreen()
+    image_data = plotter.image
+    render_window.disable_offscreen()
     
-    # First reset the camera
-    temp_plotter.reset_camera()
-    
-    # Copy current camera position from the interactive plotter
-    temp_plotter.camera.position = plotter.camera.position
-    temp_plotter.camera.focal_point = plotter.camera.focal_point
-    temp_plotter.camera.up = plotter.camera.up
-    temp_plotter.camera.zoom = plotter.camera.zoom
-    
-    # Reset clipping range after camera is fully set up
-    temp_plotter.reset_camera_clipping_range()
-
-    # Create a temporary file for the screenshot
+    # Convert numpy array to PNG
     temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    temp_plotter.screenshot(temp_img.name)
-
+    pv.save_image(temp_img.name, image_data)
+    
     # Read the image and convert to base64
     with open(temp_img.name, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
-
+    
     # Clean up
     os.unlink(temp_img.name)
-    temp_plotter.close()
-
+    
     return encoded_string
-
 
 def main():
     st.title("STL Viewer and Capture")
 
-    # Initialize session state for captured images
+    # Initialize session state
     if 'captured_images' not in st.session_state:
         st.session_state.captured_images = []
-    if 'plotter' not in st.session_state:
-        st.session_state.plotter = None
+        
+    # Use session state for plotter settings
+    if 'background_color' not in st.session_state:
+        st.session_state.background_color = "#e6e9ed"
+    if 'body_color' not in st.session_state:
+        st.session_state.body_color = "#b5bec9"
 
     # File uploader
     uploaded_file = st.file_uploader("Upload STL file", type=['stl'])
@@ -100,45 +78,67 @@ def main():
         # Sidebar controls
         st.sidebar.header("View Settings")
 
-        # Color pickers
-        background_color = st.sidebar.color_picker("Background Color", "#e6e9ed")
-        body_color = st.sidebar.color_picker("Body Color", "#b5bec9")
+        # Color pickers with session state
+        new_background_color = st.sidebar.color_picker("Background Color", st.session_state.background_color)
+        new_body_color = st.sidebar.color_picker("Body Color", st.session_state.body_color)
+        
+        # Update colors if changed
+        if new_background_color != st.session_state.background_color or new_body_color != st.session_state.body_color:
+            st.session_state.background_color = new_background_color
+            st.session_state.body_color = new_body_color
+            st.experimental_rerun()
 
         # Read STL file
         mesh = pv.read(file_path)
 
-        # Create plotter for interactive viewing
+        # Create plotter
         plotter = pv.Plotter(window_size=[800, 600])
-        setup_plotter(plotter, mesh, body_color, background_color)
-        plotter.reset_camera()
+        plotter.background_color = st.session_state.background_color
         
-        # Store plotter in session state
-        st.session_state.plotter = plotter
+        # Add mesh with edges
+        edges = mesh.extract_feature_edges(
+            boundary_edges=False,
+            non_manifold_edges=False,
+            feature_angle=45,
+            manifold_edges=False,
+        )
+        plotter.add_mesh(mesh, color=st.session_state.body_color, smooth_shading=True, 
+                        split_sharp_edges=True, edge_color='black')
+        plotter.add_mesh(edges, color='black', line_width=2)
+        plotter.reset_camera()
         
         # Create columns for preset view buttons
         st.subheader("Preset Views")
         button_cols = st.columns(5)  # 5 buttons per row
         
+        # Store the current view in session state
+        if 'current_view' not in st.session_state:
+            st.session_state.current_view = None
+            
         for idx, (view_name, angles) in enumerate(PRESET_VIEWS.items()):
             col_idx = idx % 5
             with button_cols[col_idx]:
                 if st.button(view_name):
-                    plotter.reset_camera()
-                    plotter.camera.azimuth = angles['azimuth']
-                    plotter.camera.elevation = angles['elevation']
+                    plotter.view_vector(angles['azimuth'], angles['elevation'])
+                    st.session_state.current_view = view_name
+                    st.experimental_rerun()
 
         # Create two columns for the viewer and capture button
         col1, col2 = st.columns([4, 1])
 
         with col1:
+            # Apply stored view if exists
+            if st.session_state.current_view and st.session_state.current_view in PRESET_VIEWS:
+                angles = PRESET_VIEWS[st.session_state.current_view]
+                plotter.view_vector(angles['azimuth'], angles['elevation'])
+            
             # Display the interactive viewer
             stpyvista(plotter, key="stl_viewer")
 
         with col2:
             # Capture button
             if st.button("Capture View"):
-                # Capture the current view
-                img_data = capture_view(plotter, mesh, body_color, background_color)
+                img_data = capture_view(plotter)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 st.session_state.captured_images.append({
                     'data': img_data,
@@ -149,8 +149,6 @@ def main():
         # Display captured images
         if st.session_state.captured_images:
             st.header("Captured Views")
-
-            # Create a grid of images
             cols = st.columns(3)
             for idx, img in enumerate(st.session_state.captured_images):
                 col_idx = idx % 3
@@ -160,8 +158,6 @@ def main():
                         caption=f"View {img['timestamp']}",
                         use_column_width=True
                     )
-
-                    # Add download button for each image
                     download_btn = f"""
                     <a href="data:image/png;base64,{img['data']}" 
                        download="view_{img['timestamp']}.png">
