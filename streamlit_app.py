@@ -20,9 +20,12 @@ def save_uploaded_file(uploaded_file):
 def main():
     st.title("STL Viewer")
 
-    # Initialize session state for the mesh
+    # Initialize session state
     if 'mesh' not in st.session_state:
         st.session_state.mesh = None
+
+    # Create two columns - one for viewer, one for info
+    col1, col2 = st.columns([2, 1])
 
     # Sidebar controls
     st.sidebar.header("Settings")
@@ -40,8 +43,8 @@ def main():
             # Read STL file
             mesh = pv.read(file_path)
 
-            # Create plotter
-            plotter = pv.Plotter(window_size=[800, 600])
+            # Create plotter with smaller window size
+            plotter = pv.Plotter(window_size=[400, 400])
             plotter.background_color = background_color
 
             # Add mesh with edges
@@ -64,9 +67,32 @@ def main():
             # Set up the camera
             plotter.reset_camera()
             plotter.camera_position = 'iso'
-            
-            # Display the plotter
-            stpyvista(plotter, key="stl_viewer")
+
+            with col1:
+                # Display the plotter
+                stpyvista(plotter, key="stl_viewer")
+
+            with col2:
+                # Display camera information
+                st.markdown("### Camera Info")
+                st.text("Position:")
+                st.code(f"x: {plotter.camera.position[0]:.2f}\n"
+                       f"y: {plotter.camera.position[1]:.2f}\n"
+                       f"z: {plotter.camera.position[2]:.2f}")
+                
+                st.text("Focal Point:")
+                st.code(f"x: {plotter.camera.focal_point[0]:.2f}\n"
+                       f"y: {plotter.camera.focal_point[1]:.2f}\n"
+                       f"z: {plotter.camera.focal_point[2]:.2f}")
+                
+                st.text("Up Vector:")
+                st.code(f"x: {plotter.camera.up[0]:.2f}\n"
+                       f"y: {plotter.camera.up[1]:.2f}\n"
+                       f"z: {plotter.camera.up[2]:.2f}")
+                
+                st.text("View Angles:")
+                st.code(f"Azimuth: {plotter.camera.azimuth:.2f}°\n"
+                       f"Elevation: {plotter.camera.elevation:.2f}°")
 
             # Cleanup
             os.unlink(file_path)
