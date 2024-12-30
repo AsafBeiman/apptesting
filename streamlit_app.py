@@ -34,7 +34,6 @@ def save_uploaded_file(uploaded_file):
 
 def capture_view(plotter):
     """Capture current view and return base64 encoded image"""
-    import cv2
     import numpy as np
     import io
     from PIL import Image
