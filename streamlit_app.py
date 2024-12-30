@@ -33,14 +33,25 @@ def save_uploaded_file(uploaded_file):
     return None
 
 def capture_view(plotter):
-    """Capture current view"""
-    temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    plotter.screenshot(temp_img.name)
+    """Capture current view and return base64 encoded image"""
+    import cv2
+    import numpy as np
+    import io
+    from PIL import Image
+
+    # Get image array directly from plotter
+    image_array = plotter.image
+
+    # Convert to PIL Image
+    image = Image.fromarray(image_array)
     
-    with open(temp_img.name, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode()
+    # Save to bytes buffer
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
     
-    os.unlink(temp_img.name)
+    # Get base64 encoded string
+    encoded_string = base64.b64encode(buffer.getvalue()).decode()
+    
     return encoded_string
 
 def main():
