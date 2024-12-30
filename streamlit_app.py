@@ -50,7 +50,7 @@ def capture_view(plotter):
     
     # Get base64 encoded string
     encoded_string = base64.b64encode(buffer.getvalue()).decode()
-    
+    plotter.close()
     return encoded_string
 
 def main():
