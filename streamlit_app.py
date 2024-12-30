@@ -75,12 +75,7 @@ def get_view_image(plotter, azimuth, elevation):
     plotter.camera.azimuth = azimuth
     plotter.camera.elevation = elevation
     plotter.show(auto_close=False)
-    return plotter.screenshot(
-        return_img=True,
-        window_size=[1200, 1200],  # High resolution
-        transparent_background=False,
-        return_rgba=True,
-    )
+    return plotter.screenshot()
 
 st.title("STL View Generator")
 
