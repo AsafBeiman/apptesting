@@ -114,7 +114,7 @@ def main():
             col_idx = idx % 5
             with button_cols[col_idx]:
                 if st.button(view_name):
-                    plotter.camera.reset()
+                    plotter.reset_camera()
                     plotter.camera.azimuth = angles['azimuth']
                     plotter.camera.elevation = angles['elevation']
 
