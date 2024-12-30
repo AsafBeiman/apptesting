@@ -54,9 +54,17 @@ def capture_view(plotter, mesh, body_color, background_color):
     # Set up the temp plotter exactly like the main plotter
     setup_plotter(temp_plotter, mesh, body_color, background_color)
     
-    # Copy camera position and orientation
-    temp_plotter.camera = plotter.camera.copy()
-    temp_plotter.camera.reset_clipping_range()
+    # First reset the camera
+    temp_plotter.reset_camera()
+    
+    # Copy current camera position from the interactive plotter
+    temp_plotter.camera.position = plotter.camera.position
+    temp_plotter.camera.focal_point = plotter.camera.focal_point
+    temp_plotter.camera.up = plotter.camera.up
+    temp_plotter.camera.zoom = plotter.camera.zoom
+    
+    # Reset clipping range after camera is fully set up
+    temp_plotter.reset_camera_clipping_range()
 
     # Create a temporary file for the screenshot
     temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
@@ -71,6 +79,7 @@ def capture_view(plotter, mesh, body_color, background_color):
     temp_plotter.close()
 
     return encoded_string
+
 
 def main():
     st.title("STL Viewer and Capture")
