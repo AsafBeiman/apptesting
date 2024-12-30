@@ -47,7 +47,7 @@ def save_uploaded_file(uploaded_file):
 
 def setup_plotter(mesh, background_color="#e6e9ed", body_color="#b5bec9"):
     """Create plotter with mesh and edges (done only once)"""
-    plotter = pv.Plotter(off_screen=True, window_size=[400, 400])
+    plotter = pv.Plotter(off_screen=True, window_size=[600, 600])
     plotter.background_color = background_color
     
     # Add mesh with edges
@@ -62,7 +62,7 @@ def setup_plotter(mesh, background_color="#e6e9ed", body_color="#b5bec9"):
         color=body_color,
         smooth_shading=True,
         split_sharp_edges=True,
-        edge_color='black'
+        edge_color='black',
     )
     plotter.add_mesh(edges, color='black', line_width=2)
     
@@ -90,8 +90,8 @@ if uploaded_file:
             mesh = pv.read(st.session_state.mesh_path)
             st.session_state.plotter = setup_plotter(mesh)
 
-        # Create two columns for controls and image
-        control_col, image_col = st.columns([1, 2])
+        # Create layout with spacing
+        control_col, spacer, image_col, spacer2 = st.columns([1, 0.2, 1, 0.8])
 
         with control_col:
             st.markdown("### View Controls")
@@ -121,11 +121,10 @@ if uploaded_file:
                 st.success("View captured!")
 
         with image_col:
-            # Generate and show preview using existing plotter
             preview_image = get_view_image(st.session_state.plotter, 
                                          st.session_state.azimuth, 
                                          st.session_state.elevation)
-            st.image(preview_image, caption="Preview", use_column_width=True)
+            st.image(preview_image, caption="Preview", use_container_width=True)
 
         # Display captured views
         if st.session_state.captured_views:
@@ -133,7 +132,7 @@ if uploaded_file:
             for idx, view in enumerate(st.session_state.captured_views):
                 cols = st.columns([2, 1])
                 with cols[0]:
-                    st.image(view['image'], width=200)
+                    st.image(view['image'], width=300)
                 with cols[1]:
                     st.write(f"Azimuth: {view['azimuth']}°")
                     st.write(f"Elevation: {view['elevation']}°")
