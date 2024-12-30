@@ -101,9 +101,11 @@ def main():
                 feature_angle=45,
                 manifold_edges=False,
             )
+            plotter = pv.Plotter(window_size=[300, 300])
             plotter.add_mesh(mesh, color=body_color, smooth_shading=True,
                              split_sharp_edges=True, edge_color='black')
             plotter.add_mesh(edges, color='black', line_width=2)
+            plotter.background_color = background_color
             stpyvista(plotter, key=f"sphere_1")
         except Exception as e:
             st.error(f"Error processing STL file: {str(e)}")
