@@ -8,6 +8,8 @@ from datetime import datetime
 import numpy as np
 from PIL import Image
 import io
+from stpyvista import stpyvista
+
 
 # Initialize PyVista and Streamlit settings
 pv.start_xvfb()
