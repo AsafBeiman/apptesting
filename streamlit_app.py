@@ -85,8 +85,8 @@ def main():
         if new_background_color != st.session_state.background_color or new_body_color != st.session_state.body_color:
             st.session_state.background_color = new_background_color
             st.session_state.body_color = new_body_color
-            st.experimental_rerun()
-
+            st.rerun()
+            
         # Read STL file
         mesh = pv.read(file_path)
 
@@ -116,6 +116,7 @@ def main():
                 if st.button(view_name):
                     plotter.camera.azimuth = angles['azimuth']
                     plotter.camera.elevation = angles['elevation']
+                    st.rerun()
 
         # Create two columns for the viewer and capture button
         col1, col2 = st.columns([4, 1])
