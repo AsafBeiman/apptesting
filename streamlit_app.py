@@ -37,7 +37,7 @@ def capture_view(plotter):
     import numpy as np
     import io
     from PIL import Image
-
+    plotter.show()
     # Get image array directly from plotter
     image_array = plotter.image
 
