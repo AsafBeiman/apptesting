@@ -33,26 +33,14 @@ def save_uploaded_file(uploaded_file):
     return None
 
 def capture_view(plotter):
-    """Capture current view and return image data"""
-    # Get the current render window
-    render_window = plotter.ren_win
-    
-    # Get the image directly from the render window
-    image = render_window.enable_offscreen()
-    image_data = plotter.image
-    render_window.disable_offscreen()
-    
-    # Convert numpy array to PNG
+    """Capture current view"""
     temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    pv.save_image(temp_img.name, image_data)
+    plotter.screenshot(temp_img.name)
     
-    # Read the image and convert to base64
     with open(temp_img.name, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
     
-    # Clean up
     os.unlink(temp_img.name)
-    
     return encoded_string
 
 def main():
@@ -110,28 +98,18 @@ def main():
         # Create columns for preset view buttons
         st.subheader("Preset Views")
         button_cols = st.columns(5)  # 5 buttons per row
-        
-        # Store the current view in session state
-        if 'current_view' not in st.session_state:
-            st.session_state.current_view = None
             
         for idx, (view_name, angles) in enumerate(PRESET_VIEWS.items()):
             col_idx = idx % 5
             with button_cols[col_idx]:
                 if st.button(view_name):
-                    plotter.view_vector(angles['azimuth'], angles['elevation'])
-                    st.session_state.current_view = view_name
-                    st.experimental_rerun()
+                    plotter.camera.azimuth = angles['azimuth']
+                    plotter.camera.elevation = angles['elevation']
 
         # Create two columns for the viewer and capture button
         col1, col2 = st.columns([4, 1])
 
         with col1:
-            # Apply stored view if exists
-            if st.session_state.current_view and st.session_state.current_view in PRESET_VIEWS:
-                angles = PRESET_VIEWS[st.session_state.current_view]
-                plotter.view_vector(angles['azimuth'], angles['elevation'])
-            
             # Display the interactive viewer
             stpyvista(plotter, key="stl_viewer")
 
