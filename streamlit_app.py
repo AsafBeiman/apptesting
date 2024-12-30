@@ -4,7 +4,9 @@ import tempfile
 import os
 from pathlib import Path
 from stpyvista import stpyvista
-import time
+import base64
+import io
+from PIL import Image
 
 # Initialize PyVista and Streamlit settings
 pv.start_xvfb()
@@ -18,17 +20,54 @@ def save_uploaded_file(uploaded_file):
         return tfile.name
     return None
 
+def capture_current_view(mesh, plotter, background_color, body_color):
+    """Capture the current view using an off-screen plotter"""
+    # Create off-screen plotter with same properties
+    temp_plotter = pv.Plotter(off_screen=True, window_size=[400, 400])
+    temp_plotter.background_color = background_color
+    
+    # Add mesh with same properties
+    edges = mesh.extract_feature_edges(
+        boundary_edges=False,
+        non_manifold_edges=False,
+        feature_angle=45,
+        manifold_edges=False,
+    )
+    temp_plotter.add_mesh(
+        mesh,
+        color=body_color,
+        smooth_shading=True,
+        split_sharp_edges=True,
+        edge_color='black'
+    )
+    temp_plotter.add_mesh(edges, color='black', line_width=2)
+    
+    # Copy camera position from interactive plotter
+    temp_plotter.camera = plotter.camera
+    
+    # Render and get image
+    temp_plotter.show(auto_close=False)
+    image_array = temp_plotter.screenshot()
+    temp_plotter.close()
+    
+    # Convert to PIL Image
+    image = Image.fromarray(image_array)
+    
+    # Save to buffer
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    encoded_string = base64.b64encode(buffer.getvalue()).decode()
+    
+    return encoded_string
+
 def main():
-    st.title("STL Viewer")
+    st.title("STL Viewer with View Capture")
 
-    # Initialize session state for the plotter
-    if 'plotter' not in st.session_state:
-        st.session_state.plotter = None
-    if 'file_path' not in st.session_state:
-        st.session_state.file_path = None
-
-    # Create two columns - one for viewer, one for info
-    col1, col2 = st.columns([2, 1])
+    # Initialize session state
+    if 'mesh' not in st.session_state:
+        st.session_state.mesh = None
+    if 'captured_views' not in st.session_state:
+        st.session_state.captured_views = []
 
     # Sidebar controls
     st.sidebar.header("Settings")
@@ -39,83 +78,73 @@ def main():
     uploaded_file = st.file_uploader("Upload STL file", type=['stl'])
 
     if uploaded_file:
+        # Save file temporarily
+        file_path = save_uploaded_file(uploaded_file)
+        
         try:
-            # Only create new plotter if file is newly uploaded
-            if st.session_state.file_path is None:
-                # Save file temporarily
-                file_path = save_uploaded_file(uploaded_file)
-                st.session_state.file_path = file_path
-                
-                # Read STL file
-                mesh = pv.read(file_path)
+            # Read STL file
+            mesh = pv.read(file_path)
+            
+            # Create interactive plotter
+            plotter = pv.Plotter(window_size=[400, 400])
+            plotter.background_color = background_color
 
-                # Create plotter with smaller window size
-                plotter = pv.Plotter(window_size=[400, 400])
-                plotter.background_color = background_color
+            # Add mesh with edges
+            edges = mesh.extract_feature_edges(
+                boundary_edges=False,
+                non_manifold_edges=False,
+                feature_angle=45,
+                manifold_edges=False,
+            )
+            plotter.add_mesh(
+                mesh,
+                color=body_color,
+                smooth_shading=True,
+                split_sharp_edges=True,
+                edge_color='black'
+            )
+            plotter.add_mesh(edges, color='black', line_width=2)
 
-                # Add mesh with edges
-                edges = mesh.extract_feature_edges(
-                    boundary_edges=False,
-                    non_manifold_edges=False,
-                    feature_angle=45,
-                    manifold_edges=False,
-                )
-                
-                plotter.add_mesh(
-                    mesh,
-                    color=body_color,
-                    smooth_shading=True,
-                    split_sharp_edges=True,
-                    edge_color='black'
-                )
-                plotter.add_mesh(edges, color='black', line_width=2)
-
-                # Set up the camera
-                plotter.reset_camera()
-                plotter.camera_position = 'iso'
-                
-                st.session_state.plotter = plotter
-
+            # Set up the camera
+            plotter.reset_camera()
+            
+            # Create columns for layout
+            col1, col2 = st.columns([2, 1])
+            
             with col1:
-                # Display the plotter
-                stpyvista(st.session_state.plotter, key="stl_viewer")
-
+                # Interactive viewer
+                stpyvista(plotter, key="stl_viewer")
+            
             with col2:
-                # Add a refresh button
-                if st.button("Update Camera Info"):
-                    st.rerun()
-                
-                # Display camera information
-                st.markdown("### Camera Info")
-                st.text("Position:")
-                st.code(f"x: {st.session_state.plotter.camera.position[0]:.2f}\n"
-                       f"y: {st.session_state.plotter.camera.position[1]:.2f}\n"
-                       f"z: {st.session_state.plotter.camera.position[2]:.2f}")
-                
-                st.text("Focal Point:")
-                st.code(f"x: {st.session_state.plotter.camera.focal_point[0]:.2f}\n"
-                       f"y: {st.session_state.plotter.camera.focal_point[1]:.2f}\n"
-                       f"z: {st.session_state.plotter.camera.focal_point[2]:.2f}")
-                
-                st.text("Up Vector:")
-                st.code(f"x: {st.session_state.plotter.camera.up[0]:.2f}\n"
-                       f"y: {st.session_state.plotter.camera.up[1]:.2f}\n"
-                       f"z: {st.session_state.plotter.camera.up[2]:.2f}")
-                
-                st.text("View Angles:")
-                st.code(f"Azimuth: {st.session_state.plotter.camera.azimuth:.2f}°\n"
-                       f"Elevation: {st.session_state.plotter.camera.elevation:.2f}°")
+                # Capture button
+                if st.button("Capture Current View"):
+                    img_data = capture_current_view(mesh, plotter, background_color, body_color)
+                    st.session_state.captured_views.append(img_data)
+                    st.success("View captured!")
+
+            # Display captured views
+            if st.session_state.captured_views:
+                st.header("Captured Views")
+                view_cols = st.columns(3)
+                for idx, img_data in enumerate(st.session_state.captured_views):
+                    col_idx = idx % 3
+                    with view_cols[col_idx]:
+                        st.image(f"data:image/png;base64,{img_data}")
+                        download_btn = f"""
+                        <a href="data:image/png;base64,{img_data}" 
+                           download="view_{idx}.png">
+                            Download Image
+                        </a>
+                        """
+                        st.markdown(download_btn, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Error processing STL file: {str(e)}")
-
-    # Clear button in sidebar
-    if st.sidebar.button("Clear Model"):
-        if st.session_state.file_path and os.path.exists(st.session_state.file_path):
-            os.unlink(st.session_state.file_path)
-        st.session_state.plotter = None
-        st.session_state.file_path = None
-        st.rerun()
+        
+        finally:
+            # Cleanup
+            if os.path.exists(file_path):
+                os.unlink(file_path)
 
 if __name__ == "__main__":
     main()
