@@ -11,6 +11,18 @@ from datetime import datetime
 pv.start_xvfb()
 st.set_page_config(layout="wide")
 
+# Define preset views
+PRESET_VIEWS = {
+    'Front': {'azimuth': 0, 'elevation': 0},
+    'Right': {'azimuth': 90, 'elevation': 0},
+    'Left': {'azimuth': -90, 'elevation': 0},
+    'Back': {'azimuth': 180, 'elevation': 0},
+    'Top': {'azimuth': 0, 'elevation': 90},
+    'Iso Right Front': {'azimuth': 45, 'elevation': 45},
+    'Iso Right Back': {'azimuth': 135, 'elevation': 45},
+    'Iso Left Front': {'azimuth': -45, 'elevation': 45},
+    'Iso Left Back': {'azimuth': -135, 'elevation': 45},
+}
 
 def save_uploaded_file(uploaded_file):
     """Save uploaded file temporarily and return the path"""
@@ -20,16 +32,31 @@ def save_uploaded_file(uploaded_file):
         return tfile.name
     return None
 
+def setup_plotter(plotter, mesh, body_color, background_color):
+    """Setup plotter with consistent settings"""
+    plotter.background_color = background_color
+    edges = mesh.extract_feature_edges(
+        boundary_edges=False,
+        non_manifold_edges=False,
+        feature_angle=45,
+        manifold_edges=False,
+    )
+    plotter.add_mesh(mesh, color=body_color, smooth_shading=True, 
+                    split_sharp_edges=True, edge_color='black')
+    plotter.add_mesh(edges, color='black', line_width=2)
+    return plotter
 
 def capture_view(plotter, mesh, body_color, background_color):
     """Capture current view and return image data"""
     # Create a new plotter for the screenshot with off_screen=True
-    temp_plotter = pv.Plotter(off_screen=True)
-    temp_plotter.background_color = background_color
-    temp_plotter.add_mesh(mesh, color=body_color, show_edges=True, edge_color='black')
-
-    # Copy camera position from the interactive plotter
-    temp_plotter.camera = plotter.camera
+    temp_plotter = pv.Plotter(off_screen=True, window_size=plotter.window_size)
+    
+    # Set up the temp plotter exactly like the main plotter
+    setup_plotter(temp_plotter, mesh, body_color, background_color)
+    
+    # Copy camera position and orientation
+    temp_plotter.camera = plotter.camera.copy()
+    temp_plotter.camera.reset_clipping_range()
 
     # Create a temporary file for the screenshot
     temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
@@ -45,13 +72,14 @@ def capture_view(plotter, mesh, body_color, background_color):
 
     return encoded_string
 
-
 def main():
     st.title("STL Viewer and Capture")
 
     # Initialize session state for captured images
     if 'captured_images' not in st.session_state:
         st.session_state.captured_images = []
+    if 'plotter' not in st.session_state:
+        st.session_state.plotter = None
 
     # File uploader
     uploaded_file = st.file_uploader("Upload STL file", type=['stl'])
@@ -72,16 +100,23 @@ def main():
 
         # Create plotter for interactive viewing
         plotter = pv.Plotter(window_size=[800, 600])
-        plotter.background_color = background_color
-        edges = mesh.extract_feature_edges(
-            boundary_edges=False,
-            non_manifold_edges=False,
-            feature_angle=45,
-            manifold_edges=False,
-        )
-        plotter.add_mesh(mesh, color=body_color, smooth_shading=True, split_sharp_edges=True, edge_color='black')
-        plotter.add_mesh(edges, color='black', line_width=2)
+        setup_plotter(plotter, mesh, body_color, background_color)
         plotter.reset_camera()
+        
+        # Store plotter in session state
+        st.session_state.plotter = plotter
+        
+        # Create columns for preset view buttons
+        st.subheader("Preset Views")
+        button_cols = st.columns(5)  # 5 buttons per row
+        
+        for idx, (view_name, angles) in enumerate(PRESET_VIEWS.items()):
+            col_idx = idx % 5
+            with button_cols[col_idx]:
+                if st.button(view_name):
+                    plotter.camera.reset()
+                    plotter.camera.azimuth = angles['azimuth']
+                    plotter.camera.elevation = angles['elevation']
 
         # Create two columns for the viewer and capture button
         col1, col2 = st.columns([4, 1])
@@ -128,7 +163,6 @@ def main():
 
         # Cleanup
         os.unlink(file_path)
-
 
 if __name__ == "__main__":
     main()
