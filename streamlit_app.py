@@ -11,10 +11,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-
 def is_mac():
     return platform.system() == 'Darwin'
-
 
 def copy_image_to_clipboard(img_path):
     """Copy image to clipboard based on platform."""
@@ -33,37 +31,38 @@ def copy_image_to_clipboard(img_path):
     except Exception as e:
         st.write(f"DEBUG: Clipboard operation failed but continuing: {str(e)}")
 
-
 @st.cache_resource
 def get_driver():
     """Initialize and cache the webdriver."""
-    from seleniumbase import Driver
-
+    import undetected_chromedriver as uc
+    
     try:
-        driver = Driver(uc=True, headless=True)
-        driver.maximize_window()
-        driver.execute_cdp_cmd('Network.setUserAgentOverride',
-                               {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'})
+        options = uc.ChromeOptions()
+        options.add_argument('--headless=new')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument("--window-size=1920,1080")
+        
+        driver = uc.Chrome(options=options)
         return driver
     except Exception as e:
         st.error(f"Failed to initialize webdriver: {str(e)}")
         raise
 
-
 class VizcomAutomation:
     def __init__(self, driver, wait_time=30):
         self.driver = driver
         self.wait = WebDriverWait(driver, wait_time)
-
+        
     def login(self, username, password):
         """Handle login process."""
         self.driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
-
+        
         # Email
         email_input = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
         email_input.send_keys(username)
         self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-
+        
         # Password
         time.sleep(2)
         password_input = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']")))
@@ -95,19 +94,19 @@ class VizcomAutomation:
         # Add style
         add_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gEjJrb")))
         self.driver.execute_script("arguments[0].click();", add_button)
-
+        
         # Click style button
         time.sleep(2)
         style_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Style']")))
         self.driver.execute_script("arguments[0].click();", style_button)
-
+        
         # Upload style image
         time.sleep(2)
         upload_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload...']")))
         self.driver.execute_script("arguments[0].click();", upload_button)
         file_input = self.driver.find_element(By.CSS_SELECTOR, "input[type='file']")
         file_input.send_keys(style_image_path)
-
+        
         # Set strength
         time.sleep(2)
         percentage_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
@@ -120,11 +119,11 @@ class VizcomAutomation:
         prompt_textarea = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.fmJnQo")))
         prompt_textarea.clear()
         prompt_textarea.send_keys(prompt)
-
+        
         time.sleep(2)
         generate_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
         self.driver.execute_script("arguments[0].click();", generate_button)
-
+        
         # Wait for generation
         start_time = time.time()
         while time.time() - start_time < 120:  # 2 minute timeout
@@ -140,7 +139,6 @@ class VizcomAutomation:
             time.sleep(5)
         return False
 
-
 def process_screenshot(screenshot_path):
     """Process and crop the screenshot."""
     with Image.open(screenshot_path) as img:
@@ -154,34 +152,33 @@ def process_screenshot(screenshot_path):
         cropped.save(cropped_path)
         return cropped_path
 
-
-def run_automation(model_image_path, styling_image_path, rendering_prompt,
-                   styling_strength, vizcom_username, vizcom_password, progress_bar):
+def run_automation(model_image_path, styling_image_path, rendering_prompt, 
+                  styling_strength, vizcom_username, vizcom_password, progress_bar):
     """Main automation function."""
     try:
         driver = get_driver()
         automation = VizcomAutomation(driver)
-
+        
         # Execute steps
         progress_bar.progress(10)
         copy_image_to_clipboard(model_image_path)
-
+        
         progress_bar.progress(20)
         automation.login(vizcom_username, vizcom_password)
-
+        
         progress_bar.progress(40)
         automation.setup_new_project()
-
+        
         progress_bar.progress(60)
         automation.paste_model_image()
-
+        
         progress_bar.progress(70)
         automation.apply_style_settings(styling_image_path, styling_strength)
-
+        
         progress_bar.progress(80)
         if automation.generate_image(rendering_prompt):
             progress_bar.progress(90)
-
+            
             # Take and process screenshot
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_screenshot:
                 driver.save_screenshot(tmp_screenshot.name)
@@ -193,7 +190,7 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         else:
             st.error("Generation timed out")
             return None
-
+            
     except Exception as e:
         st.error(f"Automation error: {str(e)}")
         if driver:
@@ -202,7 +199,6 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
                 with open(tmp_error.name, 'rb') as f:
                     return f.read()
         return None
-
 
 def main():
     st.title("Vizcom Automation Tool")
@@ -264,7 +260,6 @@ def main():
         finally:
             os.unlink(model_path)
             os.unlink(style_path)
-
 
 if __name__ == "__main__":
     main()
