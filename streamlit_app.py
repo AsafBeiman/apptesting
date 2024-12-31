@@ -141,38 +141,44 @@
 #         st.error(f"Error: {str(e)}")
 
 import streamlit as st
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
+from PIL import Image
+import io
 
-"""
-## Web scraping on Streamlit Cloud with Selenium
-
-[![Source](https://img.shields.io/badge/View-Source-<COLOR>.svg)](https://github.com/snehankekre/streamlit-selenium-chrome/)
-
-This is a minimal, reproducible example of how to scrape the web with Selenium and Chrome on Streamlit's Community Cloud.
-
-Fork this repo, and edit `/streamlit_app.py` to customize this app to your heart's desire. :heart:
-"""
-
-with st.echo():
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-    from webdriver_manager.core.os_manager import ChromeType
-
-    @st.cache_resource
-    def get_driver():
-        return webdriver.Chrome(
-            service=Service(
-                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-            ),
-            options=options,
-        )
-
+@st.cache_resource
+def get_driver():
     options = Options()
     options.add_argument("--disable-gpu")
     options.add_argument("--headless")
+    # Set a specific window size for consistent screenshots
+    options.add_argument("--window-size=1920,1080")
+    
+    return webdriver.Chrome(
+        service=Service(
+            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+        ),
+        options=options,
+    )
 
-    driver = get_driver()
-    driver.get("http://example.com")
-    st.code(driver.page_source)
+# Get the driver
+driver = get_driver()
+
+# Navigate to the website
+driver.get("http://example.com")
+
+# Take screenshot
+screenshot = driver.get_screenshot_as_png()
+
+# Convert the screenshot to an image that Streamlit can display
+image = Image.open(io.BytesIO(screenshot))
+
+# Display the screenshot
+st.image(image, caption='Website Screenshot', use_column_width=True)
+
+# Don't forget to quit the driver
+driver.quit()
     
