@@ -245,20 +245,38 @@ def get_driver():
 
 st.write(is_mac())
 
-# Get the driver
-driver = get_driver()
+# # Get the driver
+# driver = get_driver()
 
-# Navigate to the website
-driver.get("http://example.com")
+# # Navigate to the website
+# driver.get("http://example.com")
 
-# Take screenshot
-screenshot = driver.get_screenshot_as_png()
+# # Take screenshot
+# screenshot = driver.get_screenshot_as_png()
 
-# Convert the screenshot to an image that Streamlit can display
-image = Image.open(io.BytesIO(screenshot))
+# # Convert the screenshot to an image that Streamlit can display
+# image = Image.open(io.BytesIO(screenshot))
 
-# Display the screenshot
-st.image(image, caption='Website Screenshot', use_column_width=True)
+# # Display the screenshot
+# st.image(image, caption='Website Screenshot', use_column_width=True)
 
-# Don't forget to quit the driver
-driver.quit()
+# # Don't forget to quit the driver
+# driver.quit()
+def run_automation():
+    driver = get_driver()
+    wait = WebDriverWait(driver, 30)
+    # Navigate to the website
+    driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
+    time.sleep(2)
+    img7 = driver.get_screenshot_as_png()
+    driver.quit()
+    return img7
+
+def main():
+    st.set_page_config(layout="wide")
+    st.title("Vizcom AI Automation - STL Styling")
+    img = run_automation()
+    st.image(result, caption="Generated Result")
+
+if __name__ == "__main__":
+    main()
