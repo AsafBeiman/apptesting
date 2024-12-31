@@ -2,5 +2,6 @@ procps
 libgl1-mesa-glx
 xvfb
 libxrender-dev
-chromium-browser
-chromium-chromedriver
+chromium
+chromium-driver
+xclip
