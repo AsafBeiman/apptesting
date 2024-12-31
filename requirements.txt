@@ -3,5 +3,7 @@ numpy>=1.24.3
 pyvista>=0.43.0
 stpyvista>=0.1.4
 pillow>=10.0.0  # for image handling
-seleniumbase
+selenium
+undetected-chromedriver
+
 
