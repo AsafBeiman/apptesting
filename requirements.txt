@@ -5,5 +5,4 @@ stpyvista>=0.1.4
 pillow>=10.0.0  # for image handling
 selenium
 webdriver-manager
-chromedriver-binary
-chromedriver-binary-auto
+
