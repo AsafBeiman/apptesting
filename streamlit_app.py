@@ -179,6 +179,8 @@ def copy_image_to_clipboard(img_path):
 @st.cache_resource
 def get_driver():
     """Initialize and cache the webdriver."""
+    from seleniumbase import Driver
+    
     options = Options()
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
@@ -187,10 +189,7 @@ def get_driver():
     options.add_argument("--window-size=1920,1080")
     
     try:
-        driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=options
-        )
+        driver = Driver(uc=True, options=options)  # Using undetected-chromedriver
         return driver
     except Exception as e:
         st.error(f"Failed to initialize webdriver: {str(e)}")
