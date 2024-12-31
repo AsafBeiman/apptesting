@@ -204,197 +204,120 @@ def is_mac():
     return platform.system() == 'Darwin'
 
 
-def copy_image_to_clipboard(img_path):
-    """Copy image to clipboard based on platform."""
-    st.write(f"DEBUG: Attempting to copy image to clipboard: {img_path}")
-    try:
-        if is_mac():
-            applescript = f'''
-            set theFile to POSIX file "{img_path}"
-            set theImage to (read theFile as JPEG picture)
-            set the clipboard to theImage
-            '''
-            subprocess.run(['osascript', '-e', applescript])
-        else:
-            subprocess.run(['xclip', '-selection', 'clipboard', '-t', 'image/png', '-i', img_path])
-        st.write("DEBUG: Image copied to clipboard successfully")
-    except Exception as e:
-        st.write(f"DEBUG: Clipboard operation failed but continuing: {str(e)}")
-
-
 @st.cache_resource
 def get_driver():
-    options = Options()
-    options.add_argument("--disable-gpu")
-    options.add_argument("--headless")
-    # Set a specific window size for consistent screenshots
-    options.add_argument("--window-size=1920,1080")
+    if not is_mac():
+        options = Options()
+        options.add_argument("--disable-gpu")
+        options.add_argument("--headless")
+        # Set a specific window size for consistent screenshots
+        options.add_argument("--window-size=1920,1080")
 
-    return webdriver.Chrome(
-        service=Service(
-            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-        ),
-        options=options,
-    )
+        return webdriver.Chrome(
+            service=Service(
+                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+            ),
+            options=options,
+        )
+    else:
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Run in background
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
 
-
-
-class VizcomAutomation:
-    def __init__(self, driver, wait_time=30):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, wait_time)
-
-    def login(self, username, password):
-        """Handle login process."""
-        self.driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
-
-        # Email
-        email_input = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
-        email_input.send_keys(username)
-        self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-
-        # Password
-        time.sleep(2)
-        password_input = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']")))
-        password_input.send_keys(password)
-        self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-
-    def setup_new_project(self):
-        """Navigate to new project and set it up."""
-        time.sleep(2)
-        self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
-        time.sleep(2)
-        self.wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
-        time.sleep(3)
-        self.wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
-        time.sleep(2)
-        self.wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Create']"))).click()
-
-    def paste_model_image(self):
-        """Paste the model image into the canvas."""
-        time.sleep(2)
-        canvas = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.cQHQvu")))
-        self.driver.execute_script("arguments[0].click();", canvas)
-        actions = ActionChains(self.driver)
-        actions.key_down(Keys.COMMAND).send_keys('v').key_up(Keys.COMMAND).perform()
-        time.sleep(2)
-
-    def apply_style_settings(self, style_image_path, style_strength):
-        """Apply style settings including uploading style image."""
-        # Add style
-        add_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gEjJrb")))
-        self.driver.execute_script("arguments[0].click();", add_button)
-
-        # Click style button
-        time.sleep(2)
-        style_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Style']")))
-        self.driver.execute_script("arguments[0].click();", style_button)
-
-        # Upload style image
-        time.sleep(2)
-        upload_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload...']")))
-        self.driver.execute_script("arguments[0].click();", upload_button)
-        file_input = self.driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-        file_input.send_keys(style_image_path)
-
-        # Set strength
-        time.sleep(2)
-        percentage_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
-        percentage_button.click()
-        percentage_input = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
-        percentage_input.send_keys(style_strength)
-
-    def generate_image(self, prompt):
-        """Generate image with given prompt and wait for completion."""
-        prompt_textarea = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.fmJnQo")))
-        prompt_textarea.clear()
-        prompt_textarea.send_keys(prompt)
-
-        time.sleep(2)
-        generate_button = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
-        self.driver.execute_script("arguments[0].click();", generate_button)
-
-        # Wait for generation
-        start_time = time.time()
-        while time.time() - start_time < 120:  # 2 minute timeout
-            try:
-                add_button = self.driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
-                button_html = add_button.get_attribute('outerHTML')
-                st.write(f"DEBUG: Button HTML: {button_html}")
-                if "disabled" not in button_html:
-                    st.write("DEBUG: Generation complete")
-                    return True
-            except Exception as e:
-                st.write(f"DEBUG: Waiting for generation... {str(e)}")
-            time.sleep(5)
-        return False
-
-
-def process_screenshot(screenshot_path):
-    """Process and crop the screenshot."""
-    with Image.open(screenshot_path) as img:
-        width, height = img.size
-        left = width // 4
-        top = height // 4
-        right = width * 3 // 4
-        bottom = height * 3 // 4
-        cropped = img.crop((left, top, right, bottom))
-        cropped_path = os.path.join(os.path.dirname(screenshot_path), "cropped_result.png")
-        cropped.save(cropped_path)
-        return cropped_path
+        # Set up the WebDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_window_size(1920, 1080)
+        return driver
 
 
 def run_automation(model_image_path, styling_image_path, rendering_prompt,
                    styling_strength, vizcom_username, vizcom_password, progress_bar):
-    """Main automation function."""
-    try:
-        driver = get_driver()
-        automation = VizcomAutomation(driver)
-
-        # Execute steps
-        progress_bar.progress(10)
-        copy_image_to_clipboard(model_image_path)
-
-        progress_bar.progress(20)
-        automation.login(vizcom_username, vizcom_password)
-
-        progress_bar.progress(40)
-        automation.setup_new_project()
-
-        progress_bar.progress(60)
-        automation.paste_model_image()
-
-        progress_bar.progress(70)
-        automation.apply_style_settings(styling_image_path, styling_strength)
-
-        progress_bar.progress(80)
-        if automation.generate_image(rendering_prompt):
-            progress_bar.progress(90)
-
-            # Take and process screenshot
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_screenshot:
-                driver.save_screenshot(tmp_screenshot.name)
-                cropped_path = process_screenshot(tmp_screenshot.name)
-                with open(cropped_path, 'rb') as f:
-                    screenshot_bytes = f.read()
-                progress_bar.progress(100)
-                return screenshot_bytes
-        else:
-            st.error("Generation timed out")
-            return None
-
-    except Exception as e:
-        st.error(f"Automation error: {str(e)}")
-        if driver:
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_error:
-                driver.save_screenshot(tmp_error.name)
-                with open(tmp_error.name, 'rb') as f:
-                    return f.read()
-        return None
+    driver = get_driver()
+    wait = WebDriverWait(driver, 30)
+    # Navigate to the website
+    driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
+    progress_bar.progress(10)
+    time.sleep(2)
+    email_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
+    email_input.send_keys(vizcom_username)
+    progress_bar.progress(20)
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
+    time.sleep(2)
+    progress_bar.progress(30)
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']"))).send_keys(
+        vizcom_password)
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
+    time.sleep(3)
+    progress_bar.progress(40)
+    time.sleep(3)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
+    time.sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
+    time.sleep(5)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
+    time.sleep(2)
+    progress_bar.progress(50)
+    upload_image_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload an image']")))
+    driver.execute_script("arguments[0].click();", upload_image_button)
+    image_file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+    image_file_input.send_keys(model_image_path)
+    time.sleep(1)
+    progress_bar.progress(60)
+    time.sleep(2)
+    add_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gEjJrb")))
+    driver.execute_script("arguments[0].click();", add_button)
+    time.sleep(2)
+    style_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Style']")))
+    driver.execute_script("arguments[0].click();", style_button)
+    time.sleep(2)
+    upload_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload...']")))
+    driver.execute_script("arguments[0].click();", upload_button)
+    file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+    file_input.send_keys(styling_image_path)
+    time.sleep(2)
+    progress_bar.progress(70)
+    percentage_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
+    percentage_button.click()
+    time.sleep(0.5)  # Short wait for the input to become active
+    percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
+    percentage_input.send_keys(styling_strength)
+    time.sleep(2)
+    progress_bar.progress(75)
+    # Step 9: Enter text in prompt textarea
+    prompt_textarea = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.fmJnQo")))
+    prompt_textarea.clear()
+    prompt_textarea.send_keys(rendering_prompt)
+    progress_bar.progress(80)
+    time.sleep(2)
+    # Step 10: Click Generate button and wait
+    generate_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
+    driver.execute_script("arguments[0].click();", generate_button)
+    progress_bar.progress(90)
+    start_time = time.time()
+    while time.time() - start_time < 120:  # 2 minute timeout
+        try:
+            add_button = driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
+            button_html = add_button.get_attribute('outerHTML')
+            if "disabled" not in button_html:
+                st.write("Generation complete")
+                break
+        except Exception as e:
+            st.write(f"DEBUG: Waiting for generation... {str(e)}")
+        time.sleep(5)
+    time.sleep(1)
+    img7 = driver.get_screenshot_as_png()
+    time.sleep(1)
+    progress_bar.progress(100)
+    # Don't forget to quit the driver
+    driver.quit()
+    return img7
 
 
 def main():
-    st.title("Vizcom AI Automation")
+    st.set_page_config(layout="wide")
+    st.title("Vizcom AI Automation - STL Styling")
 
     # Create two columns for inputs
     col1, col2 = st.columns(2)
@@ -403,11 +326,11 @@ def main():
         st.subheader("Images")
         model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
         if model_image:
-            st.image(model_image, caption="Model Image", use_column_width=True)
+            st.image(model_image, caption="Model Image")
 
         styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
         if styling_image:
-            st.image(styling_image, caption="Style Image", use_column_width=True)
+            st.image(styling_image, caption="Style Image")
 
     with col2:
         st.subheader("Settings")
@@ -449,7 +372,7 @@ def main():
 
             if result:
                 st.success("Image generated successfully!")
-                st.image(result, caption="Generated Result", use_column_width=True)
+                st.image(result, caption="Generated Result")
 
                 # Add download button
                 st.download_button(
