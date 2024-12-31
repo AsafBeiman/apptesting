@@ -174,3 +174,5 @@ with st.echo():
 
     driver = get_driver()
     driver.get("http://example.com")
+    st.code(driver.page_source)
+    
