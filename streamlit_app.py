@@ -181,16 +181,16 @@ def copy_image_to_clipboard(img_path):
 def setup_webdriver():
     """Set up Chrome webdriver with appropriate options."""
     chrome_options = Options()
-
+    
     # Common options
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument("--window-size=1920,1080")
-
+    
     if not is_mac():
         chrome_options.add_argument('--headless=new')
-        chrome_options.binary_location = "/usr/bin/chromium-browser"
-        service = Service('/usr/bin/chromedriver')
+        chrome_options.binary_location = "/usr/bin/chromium"  # Updated path
+        service = Service('/usr/lib/chromium/chromedriver')   # Updated path
     else:
         service = Service()
 
