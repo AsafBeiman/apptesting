@@ -3,5 +3,4 @@ libgl1-mesa-glx
 xvfb
 libxrender-dev
 chromium
-chromium-driver
 xclip
