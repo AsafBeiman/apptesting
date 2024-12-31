@@ -190,20 +190,52 @@ from webdriver_manager.core.os_manager import ChromeType
 from PIL import Image
 import io
 
+# @st.cache_resource
+# def get_driver():
+#     options = Options()
+#     options.add_argument("--disable-gpu")
+#     options.add_argument("--headless")
+#     # Set a specific window size for consistent screenshots
+#     options.add_argument("--window-size=1920,1080")
+    
+#     return webdriver.Chrome(
+#         service=Service(
+#             ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+#         ),
+#         options=options,
+#     )
+def is_mac():
+    return platform.system() == 'Darwin'
+
+
 @st.cache_resource
 def get_driver():
-    options = Options()
-    options.add_argument("--disable-gpu")
-    options.add_argument("--headless")
-    # Set a specific window size for consistent screenshots
-    options.add_argument("--window-size=1920,1080")
-    
-    return webdriver.Chrome(
-        service=Service(
-            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-        ),
-        options=options,
-    )
+    if not is_mac():
+        options = Options()
+        options.add_argument("--disable-gpu")
+        options.add_argument("--headless")
+        # Set a specific window size for consistent screenshots
+        options.add_argument("--window-size=1920,1080")
+
+        return webdriver.Chrome(
+            service=Service(
+                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+            ),
+            options=options,
+        )
+    else:
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Run in background
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+
+        # Set up the WebDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_window_size(1920, 1080)
+        return driver
+
+st.write(is_mac())
 
 # Get the driver
 driver = get_driver()
