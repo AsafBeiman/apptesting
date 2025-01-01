@@ -185,6 +185,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         driver.get("https://app.vizcom.ai/auth")
         progress_bar.progress(10)
         time.sleep(3)  # Increased initial wait time
+        img0 = driver.get_screenshot_as_png()
+        st.image(img0)
 
         # Login process
         # st.write("Logging in...")
@@ -196,6 +198,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
         driver.execute_script("arguments[0].click();", login_button)
         time.sleep(3)
+        img1 = driver.get_screenshot_as_png()
+        st.image(img1)
         
         progress_bar.progress(30)
         password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']")))
@@ -205,7 +209,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
         driver.execute_script("arguments[0].click();", submit_button)
         time.sleep(3)
-        
+        img2 = driver.get_screenshot_as_png()
+        st.image(img2)
         progress_bar.progress(40)
         time.sleep(3)
         
@@ -213,7 +218,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         new_file_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'New file')]")))
         driver.execute_script("arguments[0].click();", new_file_link)
         time.sleep(3)
-        
+        img3 = driver.get_screenshot_as_png()
+        st.image(img3)
         start_studio = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Start in Studio']")))
         driver.execute_script("arguments[0].click();", start_studio)
         time.sleep(3)
@@ -229,7 +235,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         image_file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
         image_file_input.send_keys(model_image_path)
         time.sleep(3)
-        
+        img4 = driver.get_screenshot_as_png()
+        st.image(img4)
         progress_bar.progress(60)
         add_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.gEjJrb")))
         driver.execute_script("arguments[0].click();", add_button)
@@ -238,23 +245,29 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         style_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Style']")))
         driver.execute_script("arguments[0].click();", style_button)
         time.sleep(3)
-        
+        img5 = driver.get_screenshot_as_png()
+        st.image(img5)
         upload_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Upload...']")))
         driver.execute_script("arguments[0].click();", upload_button)
         
         file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
         file_input.send_keys(styling_image_path)
         time.sleep(3)
+        img6 = driver.get_screenshot_as_png()
+        st.image(img6)
         
         progress_bar.progress(70)
         percentage_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
         driver.execute_script("arguments[0].click();", percentage_button)
         time.sleep(2)
-        
+        img7 = driver.get_screenshot_as_png()
+        st.image(img7)
         percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
         percentage_input.clear()
         percentage_input.send_keys(str(styling_strength))
         time.sleep(3)
+        img8 = driver.get_screenshot_as_png()
+        st.image(img8)
         
         progress_bar.progress(75)
         prompt_textarea = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "textarea.fmJnQo")))
@@ -262,7 +275,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         prompt_textarea.send_keys(rendering_prompt)
         progress_bar.progress(80)
         time.sleep(3)
-        
+        img9 = driver.get_screenshot_as_png()
+        st.image(img9)
         generate_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
         driver.execute_script("arguments[0].click();", generate_button)
         progress_bar.progress(90)
@@ -276,7 +290,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
                     # st.write("Generation complete")
                 break
             time.sleep(5)
-            
+        img10 = driver.get_screenshot_as_png()
+        st.image(img10)
         time.sleep(3)  # Additional wait for final render
         img = driver.get_screenshot_as_png()
         progress_bar.progress(100)
