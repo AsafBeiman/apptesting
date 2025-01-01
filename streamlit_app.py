@@ -55,7 +55,8 @@ def render_stl_section(col1):
 
         preview_image = update_preview()
         if preview_image is not None and preview_image.size > 0:
-            st.image(preview_image, use_container_width=True)
+            with st.container(height=355):
+                st.image(preview_image)
         else:
             st.container().markdown(
                 f"""
