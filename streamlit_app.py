@@ -51,7 +51,7 @@ def render_stl_section(col1):
     with col1:
         st.subheader("STL Views Extraction")
         stl_file = st.file_uploader("Upload STL file", type=['stl'])
-
+        
         if stl_file and st.session_state.stl_viewer.plotter is None:
             st.session_state.stl_viewer.initialize_mesh(stl_file)
 
@@ -60,16 +60,15 @@ def render_stl_section(col1):
             list(STLViewer.PRESET_VIEWS.keys()),
             index=5
         )
-
+        
         preset = STLViewer.PRESET_VIEWS[st.session_state.preset_views]
         st.session_state.azimuth = st.slider("Azimuth", -180, 180, preset['azimuth'])
         st.session_state.elevation = st.slider("Elevation", -90, 90, preset['elevation'])
 
         preview_image = update_preview()
-        if preview_image is not None and preview_image.size > 0:
+        if preview_image is not None:
             with st.container(height=355):
-                if st.session_state.stl_viewer.plotter is not None:
-                    st.image(preview_image)
+                st.image(preview_image)
         else:
             st.container().markdown(
                 f"""
