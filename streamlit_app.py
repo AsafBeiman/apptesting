@@ -215,7 +215,7 @@ import io
 def is_mac():
     return platform.system() == 'Darwin'
 
-
+@st.cache_resource
 def get_driver():
     if not is_mac():
         options = Options()
