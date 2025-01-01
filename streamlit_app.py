@@ -158,28 +158,27 @@ def main():
         if not (username and password and prompt):
             st.error("Missing credentials or prompt")
             return
-        for view in st.session_state.captured_views:
-            for style_path in st.session_state.style_paths:
-                for strength in selected_strengths:
-                    progress_bar = st.progress(0)
-                    result = run_automation(
-                        view,
-                        style_path,
-                        prompt,
-                        strength,
-                        username,
-                        password,
-                        progress_bar
-                    )
-                    if result:
-                        st.success(f"Generated image for view with style strength {strength}")
-                        st.image(result)
-                        st.download_button(
-                            f"Download Result (Strength: {strength})",
-                            result,
-                            f"vizcom_result_{strength}.png",
-                            "image/png"
-                        )
+
+        progress_bar = st.progress(0)
+        result = run_automation(
+            st.session_state.captured_views[0],  # Now passing file path
+            uploaded_files[0],
+            prompt,
+            selected_strengths[0],
+            username,
+            password,
+            progress_bar
+        )
+
+        if result:
+            st.success("Image generated successfully!")
+            st.image(result)
+            st.download_button(
+                "Download Result",
+                result,
+                "vizcom_result.png",
+                "image/png"
+            )
 
 
 if __name__ == "__main__":
