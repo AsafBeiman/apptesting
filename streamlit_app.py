@@ -258,7 +258,7 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         
         progress_bar.progress(70)
         percentage_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
-        driver.execute_script("arguments[0].click();", percentage_button)
+        percentage_button.click()
         time.sleep(2)
         img7 = driver.get_screenshot_as_png()
         st.image(img7)
