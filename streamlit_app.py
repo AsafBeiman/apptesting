@@ -231,16 +231,16 @@ def get_driver():
             options=options,
         )
     else:
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in background
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Run in background
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
 
-    # Set up the WebDriver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_window_size(1920, 1080)
-    return driver
+        # Set up the WebDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_window_size(1920, 1080)
+        return driver
 
 # # Get the driver
 # driver = get_driver()
