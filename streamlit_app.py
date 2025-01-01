@@ -280,6 +280,8 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
     # Navigate to the website
     driver.get("http://app.vizcom.ai/auth")
     time.sleep(3)
+    img0 = driver.get_screenshot_as_png()
+    st.image(img0, caption="img0")
     email_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
     email_input.send_keys(vizcom_username)
     time.sleep(2)
@@ -292,20 +294,20 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']"))).send_keys(
         vizcom_password)
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-    time.sleep(3)
-    img3 = driver.get_screenshot_as_png()
-    st.image(img3, caption="img3")
-    time.sleep(3)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
-    time.sleep(2)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
-    time.sleep(5)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
-    time.sleep(2)
-    img7 = driver.get_screenshot_as_png()
-    st.image(img7, caption="img1")
+    # time.sleep(3)
+    # img3 = driver.get_screenshot_as_png()
+    # st.image(img3, caption="img3")
+    # time.sleep(3)
+    # wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
+    # time.sleep(2)
+    # wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
+    # time.sleep(5)
+    # wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
+    # time.sleep(2)
+    # img7 = driver.get_screenshot_as_png()
+    # st.image(img7, caption="img1")
     driver.quit()
-    return img7
+    return img2
 
 def main():
     st.set_page_config(layout="wide")
@@ -316,40 +318,40 @@ def main():
 
     with col1:
         st.subheader("Images")
-        model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
-        if model_image:
-            st.image(model_image, caption="Model Image")
+        # model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
+        # if model_image:
+        #     st.image(model_image, caption="Model Image")
 
-        styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
-        if styling_image:
-            st.image(styling_image, caption="Style Image")
+        # styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
+        # if styling_image:
+        #     st.image(styling_image, caption="Style Image")
 
     with col2:
         st.subheader("Settings")
         vizcom_username = st.text_input("Vizcom Username (Email)")
         vizcom_password = st.text_input("Vizcom Password", type="password")
-        rendering_prompt = st.text_area("Rendering Prompt")
-        styling_strength = st.slider("Style Strength", 0, 100, 85)
+        # rendering_prompt = st.text_area("Rendering Prompt")
+        # styling_strength = st.slider("Style Strength", 0, 100, 85)
 
     # Add a process button
     if st.button("Generate Image"):
-        if not all([model_image, styling_image, vizcom_username, vizcom_password, rendering_prompt]):
-            st.error("Please fill in all required fields")
-            return
+        # if not all([model_image, styling_image, vizcom_username, vizcom_password, rendering_prompt]):
+        #     st.error("Please fill in all required fields")
+        #     return
 
         # Create progress bar
-        progress_bar = st.progress(0)
+        # progress_bar = st.progress(0)
         st.write("Starting automation process...")
 
         try:
-            # Save uploaded images to temporary files
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_model:
-                tmp_model.write(model_image.getvalue())
-                model_path = tmp_model.name
+            # # Save uploaded images to temporary files
+            # with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_model:
+            #     tmp_model.write(model_image.getvalue())
+            #     model_path = tmp_model.name
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_style:
-                tmp_style.write(styling_image.getvalue())
-                style_path = tmp_style.name
+            # with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_style:
+            #     tmp_style.write(styling_image.getvalue())
+            #     style_path = tmp_style.name
 
             # Run the automation
             result = run_automation(
@@ -380,12 +382,12 @@ def main():
             st.error(f"An error occurred: {str(e)}")
             st.write("Please check your inputs and try again")
 
-        finally:
-            # Clean up temporary files
-            if 'model_path' in locals():
-                os.unlink(model_path)
-            if 'style_path' in locals():
-                os.unlink(style_path)
+        # finally:
+        #     # Clean up temporary files
+        #     if 'model_path' in locals():
+        #         os.unlink(model_path)
+        #     if 'style_path' in locals():
+        #         os.unlink(style_path)
 
 
 if __name__ == "__main__":
