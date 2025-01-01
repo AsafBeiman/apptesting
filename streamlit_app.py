@@ -412,249 +412,290 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.firefox import GeckoDriverManager
 
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--width=1920")
+options.add_argument("--height=1080")
 
-def is_mac():
-    return platform.system() == 'Darwin'
-
-
-@st.cache_resource
-def get_driver():
-    options = Options()
-    options.add_argument("--headless")
-    
-    if platform.system() == 'Darwin':  # macOS
-        # Mac-specific settings
-        options.binary_location = '/Applications/Firefox.app/Contents/MacOS/firefox'
-    else:
-        # Linux/Cloud settings
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-    
-    options.add_argument("--width=1920")
-    options.add_argument("--height=1080")
-    
-    try:
-        service = Service(GeckoDriverManager().install())
-        driver = webdriver.Firefox(service=service, options=options)
-        driver.set_window_size(1920, 1080)
-        return driver
-    except Exception as e:
-        st.error(f"Failed to initialize Firefox driver: {str(e)}")
-        st.info("If you're on Mac, make sure Firefox is installed in /Applications")
-        raise e
-    
-    if not is_mac():
-        # Linux/Windows specific settings
-        options.add_argument("--width=1920")
-        options.add_argument("--height=1080")
-    else:
-        # Mac specific settings
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-
-    # Set up the Firefox WebDriver
+try:
     service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(service=service, options=options)
+    # Explicitly set window size
     driver.set_window_size(1920, 1080)
-    return driver
-
-
-def run_automation():
-    driver = get_driver()
-    wait = WebDriverWait(driver, 60)  # Increased wait time to 60 seconds
     
-    #try:
-    # Navigate to the website
     st.write("Navigating to website...")
     driver.get("http://app.vizcom.ai/auth")
-    time.sleep(7)  # Increased initial wait time
+    
+    # Wait for page load
+    wait = WebDriverWait(driver, 60)
+    # Wait for a specific element that indicates the page is loaded
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    
+    # Add a small delay to ensure complete rendering
+    time.sleep(5)
+    
+    # Log the page source to debug
+    st.write("Page source length:", len(driver.page_source))
+    
+    # Take screenshot
     img7 = driver.get_screenshot_as_png()
+    
+    # Convert to PIL Image to check dimensions
+    from PIL import Image
+    import io
+    img_pil = Image.open(io.BytesIO(img7))
+    st.write("Screenshot dimensions:", img_pil.size)
+    
+    # Display the image
     st.image(img7)
-    # try:
-    #     st.write("Logging in...")
-    #     # Wait for and handle login form
-    #     email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']")))
-    #     email_input.clear()
-    #     email_input.send_keys(vizcom_username)
-    #     progress_bar.progress(20)
-        
-    #     # Use JavaScript click for more reliability
-    #     login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
-    #     driver.execute_script("arguments[0].click();", login_button)
-    #     time.sleep(5)  # Increased wait time
-        
-    #     progress_bar.progress(30)
-    #     password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']")))
-    #     password_input.clear()
-    #     password_input.send_keys(vizcom_password)
-        
-    #     submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
-    #     driver.execute_script("arguments[0].click();", submit_button)
-    #     time.sleep(5)  # Increased wait time
-    # except Exception as e:
-    #     st.error(f"Login failed: {str(e)}")
-    #     driver.quit()
-    #     raise e
-    # progress_bar.progress(40)
-    # try:
-    #     st.write("Navigating to studio...")
-    #     time.sleep(5)  # Wait for page load
-    #     new_file_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'New file')]")))
-    #     driver.execute_script("arguments[0].click();", new_file_link)
-    #     time.sleep(3)
-        
-    #     start_studio = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Start in Studio']")))
-    #     driver.execute_script("arguments[0].click();", start_studio)
-    #     time.sleep(7)  # Increased wait time for studio load
-        
-    #     landscape = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Landscape']")))
-    #     driver.execute_script("arguments[0].click();", landscape)
-    #     time.sleep(3)
-    # except Exception as e:
-    #     st.error(f"Failed to navigate to studio: {str(e)}")
-    #     driver.quit()
-    #     raise e
-    # progress_bar.progress(50)
-    # upload_image_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload an image']")))
-    # driver.execute_script("arguments[0].click();", upload_image_button)
-    # image_file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    # image_file_input.send_keys(model_image_path)
-    # time.sleep(1)
-    # progress_bar.progress(60)
-    # time.sleep(2)
-    # add_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gEjJrb")))
-    # driver.execute_script("arguments[0].click();", add_button)
-    # time.sleep(2)
-    # style_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Style']")))
-    # driver.execute_script("arguments[0].click();", style_button)
-    # time.sleep(2)
-    # upload_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload...']")))
-    # driver.execute_script("arguments[0].click();", upload_button)
-    # file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    # file_input.send_keys(styling_image_path)
-    # time.sleep(2)
-    # progress_bar.progress(70)
-    # percentage_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
-    # percentage_button.click()
-    # time.sleep(0.5)  # Short wait for the input to become active
-    # percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
-    # percentage_input.send_keys(styling_strength)
-    # time.sleep(2)
-    # progress_bar.progress(75)
-    # # Step 9: Enter text in prompt textarea
-    # prompt_textarea = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.fmJnQo")))
-    # prompt_textarea.clear()
-    # prompt_textarea.send_keys(rendering_prompt)
-    # progress_bar.progress(80)
-    # time.sleep(2)
-    # # Step 10: Click Generate button and wait
-    # generate_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
-    # driver.execute_script("arguments[0].click();", generate_button)
-    # progress_bar.progress(90)
-    # start_time = time.time()
-    # while time.time() - start_time < 120:  # 2 minute timeout
-    #     try:
-    #         add_button = driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
-    #         button_html = add_button.get_attribute('outerHTML')
-    #         if "disabled" not in button_html:
-    #             st.write("Generation complete")
-    #             break
-    #     except Exception as e:
-    #         st.write(f"DEBUG: Waiting for generation... {str(e)}")
-    #     time.sleep(5)
-    # time.sleep(1)
-    # img7 = driver.get_screenshot_as_png()
-    # time.sleep(1)
-    # progress_bar.progress(100)
-    # # Don't forget to quit the driver
+    
+except Exception as e:
+    st.error(f"Error: {str(e)}")
+finally:
     driver.quit()
-    return img7
+
+# def is_mac():
+#     return platform.system() == 'Darwin'
 
 
-def main():
-    st.set_page_config(layout="wide")
-    st.title("Vizcom AI Automation - STL Styling")
-    result = run_automation()
+# @st.cache_resource
+# def get_driver():
+#     options = Options()
+#     options.add_argument("--headless")
+    
+#     if platform.system() == 'Darwin':  # macOS
+#         # Mac-specific settings
+#         options.binary_location = '/Applications/Firefox.app/Contents/MacOS/firefox'
+#     else:
+#         # Linux/Cloud settings
+#         options.add_argument("--no-sandbox")
+#         options.add_argument("--disable-dev-shm-usage")
+    
+#     options.add_argument("--width=1920")
+#     options.add_argument("--height=1080")
+    
+#     try:
+#         service = Service(GeckoDriverManager().install())
+#         driver = webdriver.Firefox(service=service, options=options)
+#         driver.set_window_size(1920, 1080)
+#         return driver
+#     except Exception as e:
+#         st.error(f"Failed to initialize Firefox driver: {str(e)}")
+#         st.info("If you're on Mac, make sure Firefox is installed in /Applications")
+#         raise e
+    
+#     if not is_mac():
+#         # Linux/Windows specific settings
+#         options.add_argument("--width=1920")
+#         options.add_argument("--height=1080")
+#     else:
+#         # Mac specific settings
+#         options.add_argument("--no-sandbox")
+#         options.add_argument("--disable-dev-shm-usage")
 
-    if result:
-        st.success("Image generated successfully!")
-        st.image(result, caption="Generated Result")
-    # Create two columns for inputs
-    # col1, col2 = st.columns(2)
-
-    # with col1:
-    #     st.subheader("Images")
-    #     model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
-    #     if model_image:
-    #         st.image(model_image, caption="Model Image")
-
-    #     styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
-    #     if styling_image:
-    #         st.image(styling_image, caption="Style Image")
-
-    # with col2:
-    #     st.subheader("Settings")
-    #     vizcom_username = st.text_input("Vizcom Username (Email)")
-    #     vizcom_password = st.text_input("Vizcom Password", type="password")
-    #     rendering_prompt = st.text_area("Rendering Prompt")
-    #     styling_strength = st.slider("Style Strength", 0, 100, 85)
-
-    # # Add a process button
-    # if st.button("Generate Image"):
-    #     if not all([model_image, styling_image, vizcom_username, vizcom_password, rendering_prompt]):
-    #         st.error("Please fill in all required fields")
-    #         return
-
-    #     # Create progress bar
-    #     progress_bar = st.progress(0)
-    #     st.write("Starting automation process...")
-
-    #     try:
-    #         # Save uploaded images to temporary files
-    #         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_model:
-    #             tmp_model.write(model_image.getvalue())
-    #             model_path = tmp_model.name
-
-    #         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_style:
-    #             tmp_style.write(styling_image.getvalue())
-    #             style_path = tmp_style.name
-
-    #         # Run the automation
-    #         result = run_automation(
-    #             model_path,
-    #             style_path,
-    #             rendering_prompt,
-    #             styling_strength,
-    #             vizcom_username,
-    #             vizcom_password,
-    #             progress_bar
-    #         )
-
-    #         if result:
-    #             st.success("Image generated successfully!")
-    #             st.image(result, caption="Generated Result")
-
-    #             # Add download button
-    #             st.download_button(
-    #                 label="Download Result",
-    #                 data=result,
-    #                 file_name="vizcom_result.png",
-    #                 mime="image/png"
-    #             )
-    #         else:
-    #             st.error("Failed to generate image")
-
-    #     except Exception as e:
-    #         st.error(f"An error occurred: {str(e)}")
-    #         st.write("Please check your inputs and try again")
-
-    #     finally:
-    #         # Clean up temporary files
-    #         if 'model_path' in locals():
-    #             os.unlink(model_path)
-    #         if 'style_path' in locals():
-    #             os.unlink(style_path)
+#     # Set up the Firefox WebDriver
+#     service = Service(GeckoDriverManager().install())
+#     driver = webdriver.Firefox(service=service, options=options)
+#     driver.set_window_size(1920, 1080)
+#     return driver
 
 
-if __name__ == "__main__":
-    main()
+# def run_automation():
+#     driver = get_driver()
+#     wait = WebDriverWait(driver, 60)  # Increased wait time to 60 seconds
+    
+#     #try:
+#     # Navigate to the website
+#     st.write("Navigating to website...")
+#     driver.get("http://app.vizcom.ai/auth")
+#     time.sleep(7)  # Increased initial wait time
+#     img7 = driver.get_screenshot_as_png()
+#     st.image(img7)
+#     # try:
+#     #     st.write("Logging in...")
+#     #     # Wait for and handle login form
+#     #     email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']")))
+#     #     email_input.clear()
+#     #     email_input.send_keys(vizcom_username)
+#     #     progress_bar.progress(20)
+        
+#     #     # Use JavaScript click for more reliability
+#     #     login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+#     #     driver.execute_script("arguments[0].click();", login_button)
+#     #     time.sleep(5)  # Increased wait time
+        
+#     #     progress_bar.progress(30)
+#     #     password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']")))
+#     #     password_input.clear()
+#     #     password_input.send_keys(vizcom_password)
+        
+#     #     submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+#     #     driver.execute_script("arguments[0].click();", submit_button)
+#     #     time.sleep(5)  # Increased wait time
+#     # except Exception as e:
+#     #     st.error(f"Login failed: {str(e)}")
+#     #     driver.quit()
+#     #     raise e
+#     # progress_bar.progress(40)
+#     # try:
+#     #     st.write("Navigating to studio...")
+#     #     time.sleep(5)  # Wait for page load
+#     #     new_file_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'New file')]")))
+#     #     driver.execute_script("arguments[0].click();", new_file_link)
+#     #     time.sleep(3)
+        
+#     #     start_studio = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Start in Studio']")))
+#     #     driver.execute_script("arguments[0].click();", start_studio)
+#     #     time.sleep(7)  # Increased wait time for studio load
+        
+#     #     landscape = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Landscape']")))
+#     #     driver.execute_script("arguments[0].click();", landscape)
+#     #     time.sleep(3)
+#     # except Exception as e:
+#     #     st.error(f"Failed to navigate to studio: {str(e)}")
+#     #     driver.quit()
+#     #     raise e
+#     # progress_bar.progress(50)
+#     # upload_image_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload an image']")))
+#     # driver.execute_script("arguments[0].click();", upload_image_button)
+#     # image_file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+#     # image_file_input.send_keys(model_image_path)
+#     # time.sleep(1)
+#     # progress_bar.progress(60)
+#     # time.sleep(2)
+#     # add_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gEjJrb")))
+#     # driver.execute_script("arguments[0].click();", add_button)
+#     # time.sleep(2)
+#     # style_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Style']")))
+#     # driver.execute_script("arguments[0].click();", style_button)
+#     # time.sleep(2)
+#     # upload_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload...']")))
+#     # driver.execute_script("arguments[0].click();", upload_button)
+#     # file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+#     # file_input.send_keys(styling_image_path)
+#     # time.sleep(2)
+#     # progress_bar.progress(70)
+#     # percentage_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
+#     # percentage_button.click()
+#     # time.sleep(0.5)  # Short wait for the input to become active
+#     # percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
+#     # percentage_input.send_keys(styling_strength)
+#     # time.sleep(2)
+#     # progress_bar.progress(75)
+#     # # Step 9: Enter text in prompt textarea
+#     # prompt_textarea = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.fmJnQo")))
+#     # prompt_textarea.clear()
+#     # prompt_textarea.send_keys(rendering_prompt)
+#     # progress_bar.progress(80)
+#     # time.sleep(2)
+#     # # Step 10: Click Generate button and wait
+#     # generate_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
+#     # driver.execute_script("arguments[0].click();", generate_button)
+#     # progress_bar.progress(90)
+#     # start_time = time.time()
+#     # while time.time() - start_time < 120:  # 2 minute timeout
+#     #     try:
+#     #         add_button = driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
+#     #         button_html = add_button.get_attribute('outerHTML')
+#     #         if "disabled" not in button_html:
+#     #             st.write("Generation complete")
+#     #             break
+#     #     except Exception as e:
+#     #         st.write(f"DEBUG: Waiting for generation... {str(e)}")
+#     #     time.sleep(5)
+#     # time.sleep(1)
+#     # img7 = driver.get_screenshot_as_png()
+#     # time.sleep(1)
+#     # progress_bar.progress(100)
+#     # # Don't forget to quit the driver
+#     driver.quit()
+#     return img7
+
+
+# def main():
+#     st.set_page_config(layout="wide")
+#     st.title("Vizcom AI Automation - STL Styling")
+#     result = run_automation()
+
+#     if result:
+#         st.success("Image generated successfully!")
+#         st.image(result, caption="Generated Result")
+#     # Create two columns for inputs
+#     # col1, col2 = st.columns(2)
+
+#     # with col1:
+#     #     st.subheader("Images")
+#     #     model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
+#     #     if model_image:
+#     #         st.image(model_image, caption="Model Image")
+
+#     #     styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
+#     #     if styling_image:
+#     #         st.image(styling_image, caption="Style Image")
+
+#     # with col2:
+#     #     st.subheader("Settings")
+#     #     vizcom_username = st.text_input("Vizcom Username (Email)")
+#     #     vizcom_password = st.text_input("Vizcom Password", type="password")
+#     #     rendering_prompt = st.text_area("Rendering Prompt")
+#     #     styling_strength = st.slider("Style Strength", 0, 100, 85)
+
+#     # # Add a process button
+#     # if st.button("Generate Image"):
+#     #     if not all([model_image, styling_image, vizcom_username, vizcom_password, rendering_prompt]):
+#     #         st.error("Please fill in all required fields")
+#     #         return
+
+#     #     # Create progress bar
+#     #     progress_bar = st.progress(0)
+#     #     st.write("Starting automation process...")
+
+#     #     try:
+#     #         # Save uploaded images to temporary files
+#     #         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_model:
+#     #             tmp_model.write(model_image.getvalue())
+#     #             model_path = tmp_model.name
+
+#     #         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_style:
+#     #             tmp_style.write(styling_image.getvalue())
+#     #             style_path = tmp_style.name
+
+#     #         # Run the automation
+#     #         result = run_automation(
+#     #             model_path,
+#     #             style_path,
+#     #             rendering_prompt,
+#     #             styling_strength,
+#     #             vizcom_username,
+#     #             vizcom_password,
+#     #             progress_bar
+#     #         )
+
+#     #         if result:
+#     #             st.success("Image generated successfully!")
+#     #             st.image(result, caption="Generated Result")
+
+#     #             # Add download button
+#     #             st.download_button(
+#     #                 label="Download Result",
+#     #                 data=result,
+#     #                 file_name="vizcom_result.png",
+#     #                 mime="image/png"
+#     #             )
+#     #         else:
+#     #             st.error("Failed to generate image")
+
+#     #     except Exception as e:
+#     #         st.error(f"An error occurred: {str(e)}")
+#     #         st.write("Please check your inputs and try again")
+
+#     #     finally:
+#     #         # Clean up temporary files
+#     #         if 'model_path' in locals():
+#     #             os.unlink(model_path)
+#     #         if 'style_path' in locals():
+#     #             os.unlink(style_path)
+
+
+# if __name__ == "__main__":
+#     main()
