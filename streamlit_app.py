@@ -400,12 +400,16 @@ import os
 import time
 import platform
 import tempfile
+import subprocess
+from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.firefox import GeckoDriverManager
 
 
@@ -417,7 +421,7 @@ def is_mac():
 def get_driver():
     options = Options()
     options.add_argument("--headless")
-
+    
     if platform.system() == 'Darwin':  # macOS
         # Mac-specific settings
         options.binary_location = '/Applications/Firefox.app/Contents/MacOS/firefox'
@@ -425,10 +429,10 @@ def get_driver():
         # Linux/Cloud settings
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-
+    
     options.add_argument("--width=1920")
     options.add_argument("--height=1080")
-
+    
     try:
         service = Service(GeckoDriverManager().install())
         driver = webdriver.Firefox(service=service, options=options)
@@ -438,7 +442,7 @@ def get_driver():
         st.error(f"Failed to initialize Firefox driver: {str(e)}")
         st.info("If you're on Mac, make sure Firefox is installed in /Applications")
         raise e
-
+    
     if not is_mac():
         # Linux/Windows specific settings
         options.add_argument("--width=1920")
@@ -458,37 +462,58 @@ def get_driver():
 def run_automation(model_image_path, styling_image_path, rendering_prompt,
                    styling_strength, vizcom_username, vizcom_password, progress_bar):
     driver = get_driver()
-    wait = WebDriverWait(driver, 30)
-    # Navigate to the website
-    driver.get("http://app.vizcom.ai/auth")
-    progress_bar.progress(10)
-    time.sleep(2)
-    img1 = driver.get_screenshot_as_png()
-    st.image(img1)
-    email_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
-    email_input.send_keys(vizcom_username)
-    progress_bar.progress(20)
-    img2 = driver.get_screenshot_as_png()
-    st.image(img2)
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-    time.sleep(2)
-    progress_bar.progress(30)
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']"))).send_keys(
-        vizcom_password)
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
-    img3 = driver.get_screenshot_as_png()
-    st.image(img3)
-    time.sleep(3)
+    wait = WebDriverWait(driver, 60)  # Increased wait time to 60 seconds
+    
+    try:
+        # Navigate to the website
+        st.write("Navigating to website...")
+        driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
+        progress_bar.progress(10)
+        time.sleep(5)  # Increased initial wait time
+    try:
+        st.write("Logging in...")
+        # Wait for and handle login form
+        email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']")))
+        email_input.clear()
+        email_input.send_keys(vizcom_username)
+        progress_bar.progress(20)
+        
+        # Use JavaScript click for more reliability
+        login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+        driver.execute_script("arguments[0].click();", login_button)
+        time.sleep(5)  # Increased wait time
+        
+        progress_bar.progress(30)
+        password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']")))
+        password_input.clear()
+        password_input.send_keys(vizcom_password)
+        
+        submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+        driver.execute_script("arguments[0].click();", submit_button)
+        time.sleep(5)  # Increased wait time
+    except Exception as e:
+        st.error(f"Login failed: {str(e)}")
+        driver.quit()
+        raise e
     progress_bar.progress(40)
-    time.sleep(3)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
-    time.sleep(2)
-    img3 = driver.get_screenshot_as_png()
-    st.image(img3)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
-    time.sleep(5)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
-    time.sleep(2)
+    try:
+        st.write("Navigating to studio...")
+        time.sleep(5)  # Wait for page load
+        new_file_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'New file')]")))
+        driver.execute_script("arguments[0].click();", new_file_link)
+        time.sleep(3)
+        
+        start_studio = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Start in Studio']")))
+        driver.execute_script("arguments[0].click();", start_studio)
+        time.sleep(7)  # Increased wait time for studio load
+        
+        landscape = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Landscape']")))
+        driver.execute_script("arguments[0].click();", landscape)
+        time.sleep(3)
+    except Exception as e:
+        st.error(f"Failed to navigate to studio: {str(e)}")
+        driver.quit()
+        raise e
     progress_bar.progress(50)
     upload_image_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Upload an image']")))
     driver.execute_script("arguments[0].click();", upload_image_button)
