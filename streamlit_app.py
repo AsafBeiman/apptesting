@@ -393,7 +393,6 @@
 
 # if __name__ == "__main__":
 #     main()
-
 import streamlit as st
 import time
 import base64
@@ -401,8 +400,14 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
+import os
+from pyvirtualdisplay import Display
 
-# Initialize options once
+# Start virtual display
+display = Display(visible=0, size=(1920, 1080))
+display.start()
+
+# Initialize options without headless mode
 options = Options()
 options.set_preference("general.useragent.override", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0")
 options.set_preference("dom.webdriver.enabled", False)
@@ -413,7 +418,7 @@ try:
     service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(service=service, options=options)
     driver.set_window_size(1920, 1080)
-
+    
     # Test with example.com
     st.write("Testing with example.com...")
     driver.get("https://example.com")
@@ -421,7 +426,7 @@ try:
     screenshot = driver.get_screenshot_as_base64()
     image_bytes = base64.b64decode(screenshot)
     st.image(image_bytes, caption="Example.com Screenshot")
-
+    
     # Test with vizcom.ai
     st.write("Testing with vizcom.ai...")
     driver.get("https://app.vizcom.ai/auth")
@@ -432,15 +437,18 @@ try:
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
+    import traceback
+    st.error(traceback.format_exc())
+
 finally:
     st.write("Closing browser...")
     try:
         driver.quit()
+        display.stop()
     except:
         pass
 
 st.write("Test completed!")
-    
 
 # def is_mac():
 #     return platform.system() == 'Darwin'
