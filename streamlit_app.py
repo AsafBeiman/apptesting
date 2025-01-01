@@ -411,7 +411,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.firefox import GeckoDriverManager
-
+import base64
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--width=1920")
@@ -423,45 +423,29 @@ try:
     driver.set_window_size(1920, 1080)
     
     st.write("Navigating to website...")
-    driver.get("http://app.vizcom.ai/auth")
+    driver.get("https://example.com")
+    time.sleep(3)
     
-    wait = WebDriverWait(driver, 60)
-    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    # Take screenshot using a different approach
     
-    time.sleep(5)
+    screenshot = driver.get_screenshot_as_base64()
+    image_bytes = base64.b64decode(screenshot)
+    st.image(image_bytes, caption="Screenshot")
     
-    # Take screenshot
-    img_bytes = driver.get_screenshot_as_png()
-    st.write("Screenshot bytes length:", len(img_bytes))
+    st.write("Navigating to website...")
+    driver.get("https://app.vizcom.ai/auth")
+    time.sleep(3)
     
-    # Try saving and loading the image
-    import tempfile
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
-        tmp.write(img_bytes)
-        tmp_path = tmp.name
+    # Take screenshot using a different approach
     
-    # Load and display using PIL
-    from PIL import Image
-    img = Image.open(tmp_path)
-    st.write("Image mode:", img.mode)
-    st.write("Image format:", img.format)
-    
-    # Try both display methods
-    st.write("Displaying with st.image:")
-    st.image(img)
-    
-    st.write("Displaying with bytes:")
-    st.image(img_bytes)
-    
+    screenshot2 = driver.get_screenshot_as_base64()
+    image_bytes2 = base64.b64decode(screenshot2)
+    st.image(image_bytes2, caption="Screenshot")
+        
 except Exception as e:
     st.error(f"Error: {str(e)}")
-    import traceback
-    st.error(traceback.format_exc())
 finally:
     driver.quit()
-    if 'tmp_path' in locals():
-        import os
-        os.unlink(tmp_path)
 
 # def is_mac():
 #     return platform.system() == 'Darwin'
