@@ -161,7 +161,7 @@ def main():
 
         for view in st.session_state.captured_views:
             for style in uploaded_files:
-                for strength selected_strengths:
+                for strength in selected_strengths:
                     progress_bar = st.progress(0)
                     result = run_automation(
                         view,  # Now passing file path
