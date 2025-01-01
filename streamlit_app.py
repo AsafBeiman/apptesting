@@ -355,13 +355,13 @@ def main():
 
             # Run the automation
             result = run_automation(
-                model_path,
-                style_path,
-                rendering_prompt,
-                styling_strength,
+                None, # model_path,
+                None, # style_path,
+                None, # rendering_prompt,
+                None, # styling_strength,
                 vizcom_username,
                 vizcom_password,
-                progress_bar
+                None, # progress_bar
             )
 
             if result:
