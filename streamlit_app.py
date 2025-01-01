@@ -275,7 +275,7 @@ def main():
     st.write(is_mac())
     st.title("Vizcom AI Automation - STL Styling")
     img = run_automation()
-    st.image(result, caption="Generated Result")
+    st.image(img, caption="Generated Result")
 
 if __name__ == "__main__":
     main()
