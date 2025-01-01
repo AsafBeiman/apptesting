@@ -230,37 +230,12 @@ def get_driver():
             ),
             options=options,
         )
-    else:
+        else:
         chrome_options = Options()
-        # Basic configuration
-        options.add_argument("--headless=new")  # Use the new headless mode
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        
-        # Memory and performance options
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--disable-web-security")
-        options.add_argument("--ignore-certificate-errors")
-        options.add_argument("--allow-running-insecure-content")
-        
-        # Resource limits
-        options.add_argument("--memory-pressure-off")
-        options.add_argument("--use-gl=disabled")
-        options.add_argument("--window-size=1920,1080")
-        
-        # Stability improvements
-        options.add_argument("--disable-features=VizDisplayCompositor")
-        options.add_argument("--disable-accelerated-2d-canvas")
-        options.add_argument("--disable-accelerated-jpeg-decoding")
-        options.add_argument("--disable-accelerated-mjpeg-decode")
-        options.add_argument("--disable-accelerated-video-decode")
-        
-        # Process model improvements
-        options.add_argument("--single-process")  # More stable in some environments
-        options.add_argument("--disable-site-isolation-trials")
-        
+        chrome_options.add_argument("--headless")  # Run in background
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+
         # Set up the WebDriver
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -288,7 +263,7 @@ def run_automation():
     driver = get_driver()
     wait = WebDriverWait(driver, 30)
     # Navigate to the website
-    driver.get("https://www.apple.com")
+    driver.get("http://www.apple.com")
     time.sleep(3)
     img7 = driver.get_screenshot_as_png()
     st.image(img7, caption="img1")
