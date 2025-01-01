@@ -9,6 +9,8 @@ def init_session_state():
         st.session_state.stl_viewer = STLViewer()
     if 'captured_views' not in st.session_state:
         st.session_state.captured_views = []
+    if 'style_paths' not in st.session_state:
+        st.session_state.style_paths = []
     if 'azimuth' not in st.session_state:
         st.session_state.azimuth = 45
     if 'elevation' not in st.session_state:
@@ -51,7 +53,7 @@ def render_stl_section(col1):
     with col1:
         st.subheader("STL Views Extraction")
         stl_file = st.file_uploader("Upload STL file", type=['stl'])
-        
+
         if stl_file and st.session_state.stl_viewer.plotter is None:
             st.session_state.stl_viewer.initialize_mesh(stl_file)
 
@@ -60,7 +62,7 @@ def render_stl_section(col1):
             list(STLViewer.PRESET_VIEWS.keys()),
             index=5
         )
-        
+
         preset = STLViewer.PRESET_VIEWS[st.session_state.preset_views]
         st.session_state.azimuth = st.slider("Azimuth", -180, 180, preset['azimuth'])
         st.session_state.elevation = st.slider("Elevation", -90, 90, preset['elevation'])
@@ -89,28 +91,25 @@ def render_stl_section(col1):
 
 
 def render_styling_section(col2):
-   with col2:
-       st.subheader("Styling References")
-       uploaded_files = st.file_uploader(
-           "Upload up to 4 styling image references",
-           type=['png', 'jpg', 'jpeg'],
-           accept_multiple_files=True
-       )
+    with col2:
+        st.subheader("Styling References")
+        uploaded_files = st.file_uploader(
+            "Upload up to 4 styling image references",
+            type=['png', 'jpg', 'jpeg'],
+            accept_multiple_files=True
+        )
 
-       if len(uploaded_files) > 4:
-           st.warning("Maximum 4 images allowed. Only first 4 will be used.")
-
-       if uploaded_files:
-           col2_1, col2_2 = st.columns(2)
-           for idx, image in enumerate(uploaded_files[:4]):
-               with col2_1 if idx % 2 == 0 else col2_2:
-                   with st.container(height=215):
-                       # Save uploaded file to temp path
-                       with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                           tmp_file.write(image.getvalue())
-                           st.session_state.setdefault('style_paths', []).append(tmp_file.name)
-                           st.image(image)
-       return st.session_state.get('style_paths', [])
+        st.session_state.style_paths = []
+        if uploaded_files:
+            col2_1, col2_2 = st.columns(2)
+            for idx, image in enumerate(uploaded_files[:4]):
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+                    tmp_file.write(image.getvalue())
+                    st.session_state.style_paths.append(tmp_file.name)
+                with col2_1 if idx % 2 == 0 else col2_2:
+                    with st.container(height=215):
+                        st.image(image)
+        return st.session_state.style_paths
 
 
 def render_generated_views(col3):
@@ -159,27 +158,28 @@ def main():
         if not (username and password and prompt):
             st.error("Missing credentials or prompt")
             return
-
-        progress_bar = st.progress(0)
-        result = run_automation(
-            st.session_state.captured_views[0],  # Now passing file path
-            uploaded_files[0],
-            prompt,
-            selected_strengths[0],
-            username,
-            password,
-            progress_bar
-        )
-
-        if result:
-            st.success("Image generated successfully!")
-            st.image(result)
-            st.download_button(
-                "Download Result",
-                result,
-                "vizcom_result.png",
-                "image/png"
-            )
+        for view in st.session_state.captured_views:
+            for style_path in st.session_state.style_paths:
+                for strength in selected_strengths:
+                    progress_bar = st.progress(0)
+                    result = run_automation(
+                        view,
+                        style_path,
+                        prompt,
+                        strength,
+                        username,
+                        password,
+                        progress_bar
+                    )
+                    if result:
+                        st.success(f"Generated image for view with style strength {strength}")
+                        st.image(result)
+                        st.download_button(
+                            f"Download Result (Strength: {strength})",
+                            result,
+                            f"vizcom_result_{strength}.png",
+                            "image/png"
+                        )
 
 
 if __name__ == "__main__":
