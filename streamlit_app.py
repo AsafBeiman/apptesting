@@ -1,7 +1,8 @@
 import streamlit as st
 from stlviewspart import STLViewer
 from selenium_utils import run_automation
-
+import tempfile
+from PIL import Image
 
 def init_session_state():
     if 'stl_viewer' not in st.session_state:
@@ -15,12 +16,20 @@ def init_session_state():
 
 
 def update_preview():
-    if st.session_state.stl_viewer.plotter:
-        return st.session_state.stl_viewer.get_view_image(
-            st.session_state.azimuth,
-            st.session_state.elevation
-        )
-    return None
+   if st.session_state.stl_viewer.plotter:
+       preview = st.session_state.stl_viewer.get_view_image(
+           st.session_state.azimuth,
+           st.session_state.elevation
+       )
+       if preview is not None:
+           # Convert to PIL Image and resize to fit container
+           img = Image.fromarray(preview)
+           container_height = 355
+           aspect_ratio = img.width / img.height
+           new_width = int(container_height * aspect_ratio)
+           img = img.resize((new_width, container_height), Image.Resampling.LANCZOS)
+           return img
+   return None
 
 
 def capture_view():
@@ -30,7 +39,10 @@ def capture_view():
             st.session_state.elevation
         )
         if new_view is not None:
-            st.session_state.captured_views.append(new_view)
+            # Convert to bytes
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+                Image.fromarray(new_view).save(tmp_file.name)
+                st.session_state.captured_views.append(tmp_file.name)
             return True
     return False
 
@@ -56,7 +68,8 @@ def render_stl_section(col1):
         preview_image = update_preview()
         if preview_image is not None and preview_image.size > 0:
             with st.container(height=355):
-                st.image(preview_image)
+                if st.session_state.stl_viewer.plotter is not None:
+                    st.image(preview_image)
         else:
             st.container().markdown(
                 f"""
@@ -77,24 +90,28 @@ def render_stl_section(col1):
 
 
 def render_styling_section(col2):
-    with col2:
-        st.subheader("Styling References")
-        uploaded_files = st.file_uploader(
-            "Upload up to 4 styling image references",
-            type=['png', 'jpg', 'jpeg'],
-            accept_multiple_files=True
-        )
+   with col2:
+       st.subheader("Styling References")
+       uploaded_files = st.file_uploader(
+           "Upload up to 4 styling image references",
+           type=['png', 'jpg', 'jpeg'],
+           accept_multiple_files=True
+       )
 
-        if len(uploaded_files) > 4:
-            st.warning("Maximum 4 images allowed. Only first 4 will be used.")
+       if len(uploaded_files) > 4:
+           st.warning("Maximum 4 images allowed. Only first 4 will be used.")
 
-        if uploaded_files:
-            col2_1, col2_2 = st.columns(2)
-            for idx, image in enumerate(uploaded_files[:4]):
-                with col2_1 if idx % 2 == 0 else col2_2:
-                    with st.container(height=215):
-                        st.image(image)
-        return uploaded_files
+       if uploaded_files:
+           col2_1, col2_2 = st.columns(2)
+           for idx, image in enumerate(uploaded_files[:4]):
+               with col2_1 if idx % 2 == 0 else col2_2:
+                   with st.container(height=215):
+                       # Save uploaded file to temp path
+                       with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+                           tmp_file.write(image.getvalue())
+                           st.session_state.setdefault('style_paths', []).append(tmp_file.name)
+                           st.image(image)
+       return st.session_state.get('style_paths', [])
 
 
 def render_generated_views(col3):
@@ -137,16 +154,16 @@ def main():
 
     if st.button("Run Automation"):
         if not (st.session_state.captured_views and uploaded_files and selected_strengths):
-            st.error("Please ensure you have captured views, uploaded styling images, and selected strengths")
+            st.error("Missing required inputs")
             return
 
         if not (username and password and prompt):
-            st.error("Please fill in all required fields (prompt and credentials)")
+            st.error("Missing credentials or prompt")
             return
 
         progress_bar = st.progress(0)
         result = run_automation(
-            st.session_state.captured_views[0],
+            st.session_state.captured_views[0],  # Now passing file path
             uploaded_files[0],
             prompt,
             selected_strengths[0],
