@@ -264,9 +264,10 @@ def run_automation():
     driver = get_driver()
     wait = WebDriverWait(driver, 30)
     # Navigate to the website
-    driver.get("https://www.apple.com/")#("https://app.vizcom.ai/auth")
+    driver.get("https://www.apple.com")
     time.sleep(3)
     img7 = driver.get_screenshot_as_png()
+    st.image(img7, caption="img1")
     driver.quit()
     return img7
 
