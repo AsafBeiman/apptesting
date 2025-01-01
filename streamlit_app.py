@@ -273,12 +273,35 @@ def get_driver():
 
 # # Don't forget to quit the driver
 # driver.quit()
-def run_automation():
+def run_automation(model_image_path, styling_image_path, rendering_prompt,
+                   styling_strength, vizcom_username, vizcom_password, progress_bar):
     driver = get_driver()
     wait = WebDriverWait(driver, 30)
     # Navigate to the website
-    driver.get("http://www.apple.com")
+    driver.get("http://app.vizcom.ai/auth")
     time.sleep(3)
+    email_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='email']")))
+    email_input.send_keys(vizcom_username)
+    time.sleep(2)
+    img1 = driver.get_screenshot_as_png()
+    st.image(img1, caption="img1")
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
+    time.sleep(2)
+    img2 = driver.get_screenshot_as_png()
+    st.image(img2, caption="img2")
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='password']"))).send_keys(
+        vizcom_password)
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jRuTWx"))).click()
+    time.sleep(3)
+    img3 = driver.get_screenshot_as_png()
+    st.image(img3, caption="img3")
+    time.sleep(3)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'New file')]"))).click()
+    time.sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Start in Studio']"))).click()
+    time.sleep(5)
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Landscape']"))).click()
+    time.sleep(2)
     img7 = driver.get_screenshot_as_png()
     st.image(img7, caption="img1")
     driver.quit()
@@ -286,10 +309,84 @@ def run_automation():
 
 def main():
     st.set_page_config(layout="wide")
-    st.write(is_mac())
     st.title("Vizcom AI Automation - STL Styling")
-    img = run_automation()
-    st.image(img, caption="Generated Result")
+
+    # Create two columns for inputs
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Images")
+        model_image = st.file_uploader("Upload Model Image", type=['png', 'jpg', 'jpeg'])
+        if model_image:
+            st.image(model_image, caption="Model Image")
+
+        styling_image = st.file_uploader("Upload Style Image", type=['png', 'jpg', 'jpeg'])
+        if styling_image:
+            st.image(styling_image, caption="Style Image")
+
+    with col2:
+        st.subheader("Settings")
+        vizcom_username = st.text_input("Vizcom Username (Email)")
+        vizcom_password = st.text_input("Vizcom Password", type="password")
+        rendering_prompt = st.text_area("Rendering Prompt")
+        styling_strength = st.slider("Style Strength", 0, 100, 85)
+
+    # Add a process button
+    if st.button("Generate Image"):
+        if not all([model_image, styling_image, vizcom_username, vizcom_password, rendering_prompt]):
+            st.error("Please fill in all required fields")
+            return
+
+        # Create progress bar
+        progress_bar = st.progress(0)
+        st.write("Starting automation process...")
+
+        try:
+            # Save uploaded images to temporary files
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_model:
+                tmp_model.write(model_image.getvalue())
+                model_path = tmp_model.name
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_style:
+                tmp_style.write(styling_image.getvalue())
+                style_path = tmp_style.name
+
+            # Run the automation
+            result = run_automation(
+                model_path,
+                style_path,
+                rendering_prompt,
+                styling_strength,
+                vizcom_username,
+                vizcom_password,
+                progress_bar
+            )
+
+            if result:
+                st.success("Image generated successfully!")
+                st.image(result, caption="Generated Result")
+
+                # Add download button
+                st.download_button(
+                    label="Download Result",
+                    data=result,
+                    file_name="vizcom_result.png",
+                    mime="image/png"
+                )
+            else:
+                st.error("Failed to generate image")
+
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+            st.write("Please check your inputs and try again")
+
+        finally:
+            # Clean up temporary files
+            if 'model_path' in locals():
+                os.unlink(model_path)
+            if 'style_path' in locals():
+                os.unlink(style_path)
+
 
 if __name__ == "__main__":
     main()
