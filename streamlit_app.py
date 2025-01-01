@@ -216,7 +216,6 @@ def is_mac():
     return platform.system() == 'Darwin'
 
 
-@st.cache_resource
 def get_driver():
     if not is_mac():
         options = Options()
@@ -233,10 +232,35 @@ def get_driver():
         )
     else:
         chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Run in background
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-
+        # Basic configuration
+        options.add_argument("--headless=new")  # Use the new headless mode
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        
+        # Memory and performance options
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_argument("--disable-web-security")
+        options.add_argument("--ignore-certificate-errors")
+        options.add_argument("--allow-running-insecure-content")
+        
+        # Resource limits
+        options.add_argument("--memory-pressure-off")
+        options.add_argument("--use-gl=disabled")
+        options.add_argument("--window-size=1920,1080")
+        
+        # Stability improvements
+        options.add_argument("--disable-features=VizDisplayCompositor")
+        options.add_argument("--disable-accelerated-2d-canvas")
+        options.add_argument("--disable-accelerated-jpeg-decoding")
+        options.add_argument("--disable-accelerated-mjpeg-decode")
+        options.add_argument("--disable-accelerated-video-decode")
+        
+        # Process model improvements
+        options.add_argument("--single-process")  # More stable in some environments
+        options.add_argument("--disable-site-isolation-trials")
+        
         # Set up the WebDriver
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
