@@ -219,10 +219,24 @@ def is_mac():
 def get_driver():
     if not is_mac():
         options = Options()
-        options.add_argument("--disable-gpu")
-        options.add_argument("--headless")
-        # Set a specific window size for consistent screenshots
+    
+        # Basic headless setup
+        options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
+        
+        # Memory-related options to prevent crashes
+        options.add_argument("--no-sandbox")  # Less secure but more stable
+        options.add_argument("--disable-dev-shm-usage")  # Use /tmp instead of /dev/shm
+        
+        # Additional stability options
+        options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
+        options.add_argument("--ignore-certificate-errors")  # Handle SSL/HTTPS issues
+        options.add_argument("--remote-debugging-port=9222")  # Enable debugging if needed
+        
+        # Memory management
+        options.add_argument("--start-maximized")  # Start maximized to ensure consistent viewport
+        options.add_argument("--disable-extensions")  # Disable extensions for stability
+    
 
         return webdriver.Chrome(
             service=Service(
