@@ -574,15 +574,7 @@ def run_automation():
 def main():
     st.set_page_config(layout="wide")
     st.title("Vizcom AI Automation - STL Styling")
-    result = run_automation(
-                model_path,
-                style_path,
-                rendering_prompt,
-                styling_strength,
-                vizcom_username,
-                vizcom_password,
-                progress_bar
-            )
+    result = run_automation()
 
     if result:
         st.success("Image generated successfully!")
