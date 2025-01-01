@@ -467,7 +467,7 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
     try:
         # Navigate to the website
         st.write("Navigating to website...")
-        driver.get("https://app.vizcom.ai/files/team/2f8f9d59-a5b8-4175-b258-e339144008a5")
+        driver.get("https://app.vizcom.ai/auth")
         progress_bar.progress(10)
         time.sleep(5)  # Increased initial wait time
     try:
