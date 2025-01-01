@@ -394,61 +394,53 @@
 # if __name__ == "__main__":
 #     main()
 
-# firefoxtest
 import streamlit as st
-import os
 import time
-import platform
-import tempfile
-import subprocess
-from PIL import Image
+import base64
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.firefox import GeckoDriverManager
-import base64
+
+# Initialize options once
 options = Options()
-options = Options()
-    # Removed headless mode
 options.set_preference("general.useragent.override", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0")
 options.set_preference("dom.webdriver.enabled", False)
 options.set_preference("useAutomationExtension", False)
 
-
 try:
+    st.write("Starting Firefox...")
     service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(service=service, options=options)
     driver.set_window_size(1920, 1080)
-    
-    st.write("Navigating to website...")
+
+    # Test with example.com
+    st.write("Testing with example.com...")
     driver.get("https://example.com")
     time.sleep(3)
-    
-    # Take screenshot using a different approach
-    
     screenshot = driver.get_screenshot_as_base64()
     image_bytes = base64.b64decode(screenshot)
-    st.image(image_bytes, caption="Screenshot")
-    
-    st.write("Navigating to website...")
+    st.image(image_bytes, caption="Example.com Screenshot")
+
+    # Test with vizcom.ai
+    st.write("Testing with vizcom.ai...")
     driver.get("https://app.vizcom.ai/auth")
     time.sleep(3)
-    
-    # Take screenshot using a different approach
-    
     screenshot2 = driver.get_screenshot_as_base64()
     image_bytes2 = base64.b64decode(screenshot2)
-    st.image(image_bytes2, caption="Screenshot")
-        
+    st.image(image_bytes2, caption="Vizcom.ai Screenshot")
+
 except Exception as e:
-    st.error(f"Error: {str(e)}")
+    st.error(f"An error occurred: {str(e)}")
 finally:
-    driver.quit()
+    st.write("Closing browser...")
+    try:
+        driver.quit()
+    except:
+        pass
+
+st.write("Test completed!")
+    
 
 # def is_mac():
 #     return platform.system() == 'Darwin'
