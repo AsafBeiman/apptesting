@@ -243,8 +243,6 @@ def get_driver():
         driver.set_window_size(1920, 1080)
         return driver
 
-st.write(is_mac())
-
 # # Get the driver
 # driver = get_driver()
 
@@ -274,6 +272,7 @@ def run_automation():
 
 def main():
     st.set_page_config(layout="wide")
+    st.write(is_mac())
     st.title("Vizcom AI Automation - STL Styling")
     img = run_automation()
     st.image(result, caption="Generated Result")
