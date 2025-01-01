@@ -54,19 +54,19 @@ def render_stl_section(col1):
         st.session_state.elevation = st.slider("Elevation", -90, 90, preset['elevation'])
 
         preview_image = update_preview()
-        if preview_image:
+        if preview_image is not None and preview_image.size > 0:
             st.image(preview_image, use_container_width=True)
         else:
             st.container().markdown(
                 f"""
-               <div style='height: 355px;
-                           border: 1px solid #ccc;
-                           display: flex;
-                           align-items: center;
-                           justify-content: center'>
-                   STL preview
-               </div>
-               """,
+                <div style='height: 355px;
+                            border: 1px solid #ccc;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center'>
+                    STL preview
+                </div>
+                """,
                 unsafe_allow_html=True
             )
 
