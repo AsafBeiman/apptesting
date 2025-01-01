@@ -124,7 +124,6 @@ def render_generated_views(col3):
                     else:
                         st.write(f'view{i + 1}')
 
-
 def main():
     st.set_page_config(layout="wide")
     st.title("Vizcom AI Automation - STL Styling")
