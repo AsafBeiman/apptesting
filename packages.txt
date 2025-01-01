@@ -4,3 +4,5 @@ xvfb
 libxrender-dev
 chromium
 xclip
+firefox-esr
+geckodriver
