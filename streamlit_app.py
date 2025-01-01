@@ -420,39 +420,48 @@ options.add_argument("--height=1080")
 try:
     service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(service=service, options=options)
-    # Explicitly set window size
     driver.set_window_size(1920, 1080)
     
     st.write("Navigating to website...")
     driver.get("http://app.vizcom.ai/auth")
     
-    # Wait for page load
     wait = WebDriverWait(driver, 60)
-    # Wait for a specific element that indicates the page is loaded
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
     
-    # Add a small delay to ensure complete rendering
     time.sleep(5)
     
-    # Log the page source to debug
-    st.write("Page source length:", len(driver.page_source))
-    
     # Take screenshot
-    img7 = driver.get_screenshot_as_png()
+    img_bytes = driver.get_screenshot_as_png()
+    st.write("Screenshot bytes length:", len(img_bytes))
     
-    # Convert to PIL Image to check dimensions
+    # Try saving and loading the image
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+        tmp.write(img_bytes)
+        tmp_path = tmp.name
+    
+    # Load and display using PIL
     from PIL import Image
-    import io
-    img_pil = Image.open(io.BytesIO(img7))
-    st.write("Screenshot dimensions:", img_pil.size)
+    img = Image.open(tmp_path)
+    st.write("Image mode:", img.mode)
+    st.write("Image format:", img.format)
     
-    # Display the image
-    st.image(img7)
+    # Try both display methods
+    st.write("Displaying with st.image:")
+    st.image(img)
+    
+    st.write("Displaying with bytes:")
+    st.image(img_bytes)
     
 except Exception as e:
     st.error(f"Error: {str(e)}")
+    import traceback
+    st.error(traceback.format_exc())
 finally:
     driver.quit()
+    if 'tmp_path' in locals():
+        import os
+        os.unlink(tmp_path)
 
 # def is_mac():
 #     return platform.system() == 'Darwin'
