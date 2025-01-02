@@ -13,7 +13,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 from pyvirtualdisplay import Display
 
 
-@st.cache_resource
+# @st.cache_resource
 def get_driver():
     # Initialize virtual display
     display = Display(visible=0, size=(1920, 1080))
