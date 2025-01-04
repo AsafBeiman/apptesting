@@ -148,7 +148,7 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         #         break
         #     time.sleep(5)
 
-        time.sleep(45)  # Additional wait for final render
+        time.sleep(60)  # Additional wait for final render
         img = driver.get_screenshot_as_png()
         progress_bar.progress(100)
         return img
