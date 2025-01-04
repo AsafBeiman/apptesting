@@ -13,7 +13,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 from pyvirtualdisplay import Display
 
 
-@st.cache_resource
+# @st.cache_resource
 def get_driver():
     # Initialize virtual display
     display = Display(visible=0, size=(1920, 1080))
@@ -53,8 +53,9 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         email_input.send_keys(vizcom_username)
         progress_bar.progress(20)
 
-        login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
-        driver.execute_script("arguments[0].click();", login_button)
+        # login_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+        # driver.execute_script("arguments[0].click();", login_button)
+        wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Continue']"))).click()
         time.sleep(3)
 
         progress_bar.progress(30)
@@ -62,23 +63,24 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
         password_input.clear()
         password_input.send_keys(vizcom_password)
 
-        submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
-        driver.execute_script("arguments[0].click();", submit_button)
+        # submit_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.jRuTWx")))
+        # driver.execute_script("arguments[0].click();", submit_button)
+        wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Continue']"))).click()
         time.sleep(3)
         progress_bar.progress(40)
-        time.sleep(3)
+        time.sleep(2)
 
         # st.write("Navigating to studio...")
         new_file_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'New file')]")))
         driver.execute_script("arguments[0].click();", new_file_link)
-        time.sleep(3)
+        time.sleep(2)
         start_studio = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Start in Studio']")))
         driver.execute_script("arguments[0].click();", start_studio)
-        time.sleep(3)
+        time.sleep(2)
 
         landscape = wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Landscape']")))
         driver.execute_script("arguments[0].click();", landscape)
-        time.sleep(3)
+        time.sleep(2)
 
         progress_bar.progress(50)
         upload_image_button = wait.until(
@@ -87,12 +89,13 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
 
         image_file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
         image_file_input.send_keys(model_image_path)
-        time.sleep(3)
+        time.sleep(2)
 
         progress_bar.progress(60)
-        add_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.gEjJrb")))
-        driver.execute_script("arguments[0].click();", add_button)
-        time.sleep(3)
+        # add_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.gEjJrb")))
+        # driver.execute_script("arguments[0].click();", add_button)
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Add...']"))).click()
+        time.sleep(2)
 
         style_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[text()='Style']")))
         driver.execute_script("arguments[0].click();", style_button)
@@ -107,35 +110,45 @@ def run_automation(model_image_path, styling_image_path, rendering_prompt,
 
 
         progress_bar.progress(70)
-        percentage_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
-        percentage_button.click()
-        time.sleep(0.5)
-        percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
-        percentage_input.send_keys(str(styling_strength))
-        time.sleep(3)
+        # percentage_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sc-dBfUQs.gOSsgq")))
+        # percentage_button.click()
+        # time.sleep(0.5)
+        # percentage_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.sc-kLgxMn.eVooDm")))
+        # percentage_input.send_keys(str(styling_strength))
+        range_input = wait.until(
+            EC.presence_of_element_located((By.XPATH, "//span[text()='Strength']/following::input[@type='range']")))
+        strenght = str(styling_strength)
+        driver.execute_script(f"arguments[0].value = '{strenght}';", range_input)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", range_input)
+        time.sleep(2)
 
         progress_bar.progress(75)
-        prompt_textarea = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "textarea.fmJnQo")))
+        # prompt_textarea = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "textarea.fmJnQo")))
+        # prompt_textarea.clear()
+        # prompt_textarea.send_keys(rendering_prompt)
+        prompt_textarea = wait.until(
+            EC.presence_of_element_located((By.XPATH, "//textarea[@placeholder='What are you creating?']")))
         prompt_textarea.clear()
         prompt_textarea.send_keys(rendering_prompt)
         progress_bar.progress(80)
-        time.sleep(3)
+        time.sleep(2)
 
-        generate_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
-        driver.execute_script("arguments[0].click();", generate_button)
+        # generate_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.sc-gJFNMl.kLShra")))
+        # driver.execute_script("arguments[0].click();", generate_button)
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Generate']"))).click()
         progress_bar.progress(90)
 
         # Wait for generation to complete
-        start_time = time.time()
-        while time.time() - start_time < 120:  # 2 minute timeout
-            add_button = driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
-            button_html = add_button.get_attribute('outerHTML')
-            if "disabled" not in button_html:
-                # st.write("Generation complete")
-                break
-            time.sleep(5)
+        # start_time = time.time()
+        # while time.time() - start_time < 120:  # 2 minute timeout
+        #     add_button = driver.find_element(By.CSS_SELECTOR, "button.sc-gJFNMl.kJmtTh")
+        #     button_html = add_button.get_attribute('outerHTML')
+        #     if "disabled" not in button_html:
+        #         # st.write("Generation complete")
+        #         break
+        #     time.sleep(5)
 
-        time.sleep(3)  # Additional wait for final render
+        time.sleep(45)  # Additional wait for final render
         img = driver.get_screenshot_as_png()
         progress_bar.progress(100)
         return img
