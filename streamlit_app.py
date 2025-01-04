@@ -55,6 +55,24 @@ def add_generated_result(view_path, style_path, strength, result_image):
     st.session_state.generated_results.append(result)
     return result_id
 
+def create_download_all_button():
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for result in st.session_state.generated_results:
+            image_bytes = result['result_image']
+            zip_file.writestr(
+                f"vizcom_result_{result['id']}.png",
+                image_bytes
+            )
+    
+    st.download_button(
+        "Download All Results",
+        zip_buffer.getvalue(),
+        "vizcom_results.zip",
+        "application/zip",
+        key="download_all"
+    )
+    
 def render_generated_results():
     if st.session_state.generated_results:
         st.subheader("Generated Images")
