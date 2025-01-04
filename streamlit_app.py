@@ -3,6 +3,28 @@ from stlviewspart import STLViewer
 from selenium_utils import run_automation
 import tempfile
 from PIL import Image
+import io
+import zipfile
+import os
+
+def crop_image_bytes(image_bytes, side_percent=10, top_percent=15):
+    """Crop image with different percentages from sides and top/bottom"""
+    image = Image.open(io.BytesIO(image_bytes))
+    
+    width, height = image.size
+    crop_x = int(width * (side_percent / 100))
+    crop_y = int(height * (top_percent / 100))
+    
+    cropped_image = image.crop((
+        crop_x,           # left
+        crop_y,          # top
+        width - crop_x,  # right
+        height - crop_y  # bottom
+    ))
+    
+    output_buffer = io.BytesIO()
+    cropped_image.save(output_buffer, format='PNG')
+    return output_buffer.getvalue()
 
 def init_session_state():
     if 'stl_viewer' not in st.session_state:
@@ -15,6 +37,68 @@ def init_session_state():
         st.session_state.azimuth = 45
     if 'elevation' not in st.session_state:
         st.session_state.elevation = 45
+    if 'generated_results' not in st.session_state:
+        st.session_state.generated_results = []
+
+def add_generated_result(view_path, style_path, strength, result_image):
+    result_id = len(st.session_state.generated_results)
+    # Crop the result image
+    cropped_result = crop_image_bytes(result_image, side_percent=20, top_percent=5)
+    
+    result = {
+        'id': result_id,
+        'view_path': view_path,
+        'style_path': style_path,
+        'strength': strength,
+        'result_image': cropped_result
+    }
+    st.session_state.generated_results.append(result)
+    return result_id
+
+def render_generated_results():
+    if st.session_state.generated_results:
+        st.subheader("Generated Images")
+        
+        # Display headers only once
+        header_cols = st.columns([0.5, 0.8, 0.8, 2, 0.5])
+        with header_cols[0]:
+            st.subheader("Strength")
+        with header_cols[1]:
+            st.subheader("STL View")
+        with header_cols[2]:
+            st.subheader("Styling Reference")
+        with header_cols[3]:
+            st.subheader("Rendered Result")
+        with header_cols[4]:
+            st.subheader("Download")
+        
+        # Display content rows
+        for result in st.session_state.generated_results:
+            cols = st.columns([0.5, 0.8, 0.8, 2, 0.5])
+            
+            with cols[0]:
+                st.write(f"{result['strength']}%")
+            
+            with cols[1]:
+                st.image(result['view_path'])
+            
+            with cols[2]:
+                st.image(result['style_path'])
+            
+            with cols[3]:
+                st.image(result['result_image'])
+            
+            with cols[4]:
+                st.download_button(
+                    "Download Result",
+                    result['result_image'],
+                    f"vizcom_result_{result['id']}.png",
+                    "image/png",
+                    key=f"download_{result['id']}"
+                )
+        
+        if len(st.session_state.generated_results) > 1:
+            create_download_all_button()
 
 
 def update_preview():
@@ -163,7 +247,7 @@ def main():
                 for strength in selected_strengths:
                     progress_bar = st.progress(0)
                     result = run_automation(
-                        view,  # Now passing file path
+                        view,
                         style,
                         prompt,
                         strength,
@@ -173,14 +257,13 @@ def main():
                     )
             
                     if result:
-                        st.success("Image generated successfully!")
-                        st.image(result)
-                        st.download_button(
-                            "Download Result",
-                            result,
-                            "vizcom_result.png",
-                            "image/png"
-                        )
+                        result_id = add_generated_result(view, style, strength, result)
+                        st.success(f"Image {result_id + 1} generated successfully!")
+    
+    # Always render results section if there are any results
+    if st.session_state.generated_results:
+        st.markdown("---")  # Add a separator
+        render_generated_results()
 
 
 if __name__ == "__main__":
